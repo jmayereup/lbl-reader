@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LBL Reader - Language Learning Practice</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="lbl-reader.js" defer></script>
+</head>
+
+<body>
+    <h1>Line-By-Line Reader</h1>
+    <p class="subtitle">Read the story and find the translation for the highlighted words.</p>
+
+    <lbl-reader story-title="The Boy Who Cried Wolf" lang-original="en" lang-translation="th">
+        [
+        {
+        "original": "A shepherd boy was watching his sheep.",
+        "highlightIndex": 4,
+        "fullTranslation": "เด็กเลี้ยงแกะกำลังเฝ้าแกะของเขา",
+        "translationOptions": ["เฝ้า", "แกะ", "เด็ก", "ของเขา"],
+        "correctTranslationIndex": 0
+        },
+        {
+        "original": "He was bored and wanted some fun.",
+        "highlightIndex": 2,
+        "fullTranslation": "เขาเบื่อและต้องการความสนุก",
+        "translationOptions": ["ต้องการ", "สนุก", "เบื่อ", "และ"],
+        "correctTranslationIndex": 2
+        },
+        {
+        "original": "He shouted 'Wolf! Wolf!' to trick people.",
+        "highlightIndex": 6,
+        "fullTranslation": "เขาตะโกนว่า 'หมาป่า! หมาป่า!' เพื่อหลอกประชาชน",
+        "translationOptions": ["ตะโกน", "ประชาชน", "หลอก", "เพื่อ"],
+        "correctTranslationIndex": 1
+        },
+        {
+        "original": "The villagers ran to help him.",
+        "highlightIndex": 1,
+        "fullTranslation": "ชาวบ้านวิ่งมาช่วยเขา",
+        "translationOptions": ["ช่วย", "ชาวบ้าน", "วิ่ง", "ลูกชาย"],
+        "correctTranslationIndex": 1
+        },
+        {
+        "original": "But they found no wolf there.",
+        "highlightIndex": 2,
+        "fullTranslation": "แต่พวกเขากลับไม่พบหมาป่าที่นั่น",
+        "translationOptions": ["พบ", "เดิน", "หมาป่า", "ไม่มี"],
+        "correctTranslationIndex": 0
+        }
+        ]
+    </lbl-reader>
+
+    <div class="footer">
+        Powered by Antigravity LBL Reader Component
+    </div>
+</body>
+
+</html>
