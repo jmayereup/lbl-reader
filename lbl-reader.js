@@ -133,7 +133,7 @@ class LblReader extends HTMLElement {
     card.classList.add('answered');
     this.answeredCount++;
 
-    const buttons = card.querySelectorAll('button');
+    const buttons = card.querySelectorAll('.translation-options button');
     buttons.forEach(b => {
       b.disabled = true;
       if (b !== button) b.style.opacity = '0.5';
