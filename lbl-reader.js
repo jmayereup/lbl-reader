@@ -110,7 +110,7 @@ class LblReader extends HTMLElement {
     const finishBtnContainer = document.createElement('div');
     finishBtnContainer.classList.add('finish-container');
     const finishBtn = document.createElement('button');
-    finishBtn.textContent = 'Submit';
+    finishBtn.textContent = 'Create Report';
     finishBtn.classList.add('finish-btn');
     finishBtn.onclick = () => this.showFinalForm();
     finishBtnContainer.appendChild(finishBtn);
@@ -222,8 +222,8 @@ class LblReader extends HTMLElement {
         :host {
           display: block;
           font-family: inherit;
-          max-width: 60em;
-          margin: 2em auto;
+          max-width: 80em;
+          margin: 1em auto;
           color: #333;
           position: relative;
         }
@@ -245,9 +245,8 @@ class LblReader extends HTMLElement {
         .story-container {
           display: flex;
           flex-direction: column;
-          gap: 2em;
+          gap: 1em;
           padding: 1em;
-          max-height: 70vh;
           overflow-y: auto;
           scrollbar-width: thin;
           scrollbar-color: #cbd5e1 transparent;
@@ -265,7 +264,7 @@ class LblReader extends HTMLElement {
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
           border-radius: 1.2em;
-          padding: 2.5em;
+          padding: 1em;
           box-shadow: 0 0.5em 2em rgba(0,0,0,0.05);
           text-align: center;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
