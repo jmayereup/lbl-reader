@@ -12,6 +12,12 @@ class LblReader extends HTMLElement {
     this.playbackIndex = 0;
     this.isPaused = false;
     this.playbackUtterance = null;
+
+    // Unscramble activity state
+    this.unscrambleData = [];
+    this.currentUnscrambleIndex = 0;
+    this.unscrambleScore = 0;
+    this.userUnscrambledWords = [];
   }
 
   connectedCallback() {
@@ -44,6 +50,11 @@ class LblReader extends HTMLElement {
           };
         });
         this.displayAllLines();
+        this.unscrambleData = [];
+        this.currentUnscrambleIndex = 0;
+        this.unscrambleScore = 0;
+        this.userUnscrambledWords = [];
+        this.updateProgress();
       }
     } catch (e) {
       console.error('Failed to parse JSON data for lbl-reader', e);
@@ -119,9 +130,9 @@ class LblReader extends HTMLElement {
     const finishBtnContainer = document.createElement('div');
     finishBtnContainer.classList.add('finish-container');
     const finishBtn = document.createElement('button');
-    finishBtn.textContent = 'Create Report';
+    finishBtn.textContent = 'Continue to Activity';
     finishBtn.classList.add('finish-btn');
-    finishBtn.onclick = () => this.showFinalForm();
+    finishBtn.onclick = () => this.startUnscrambleActivity();
     finishBtnContainer.appendChild(finishBtn);
     container.appendChild(finishBtnContainer);
 
@@ -302,41 +313,188 @@ class LblReader extends HTMLElement {
   handleSelection(cardIndex, selectedIndex, correctIndex, button, card) {
     if (card.classList.contains('answered')) return;
 
-    card.classList.add('answered');
-    this.answeredCount++;
-
-    const buttons = card.querySelectorAll('.translation-options button');
-    buttons.forEach(b => {
-      b.disabled = true;
-      if (b !== button) b.style.opacity = '0.5';
-    });
-
     if (selectedIndex === correctIndex) {
-      this.score++;
+      card.classList.add('answered');
+      this.answeredCount++;
+
+      if (!card.dataset.hadError) {
+        this.score++;
+      }
+
       button.classList.add('success');
       card.classList.add('completed');
+      card.classList.remove('failed');
+
+      const buttons = card.querySelectorAll('.translation-options button');
+      buttons.forEach(b => {
+        b.disabled = true;
+        if (b !== button) b.style.opacity = '0.5';
+      });
+
+      this.updateProgress();
+
+      const nextCard = card.nextElementSibling;
+      if (nextCard && !nextCard.classList.contains('finish-container')) {
+        setTimeout(() => {
+          nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 600);
+      }
     } else {
       button.classList.add('error');
+      button.disabled = true;
       card.classList.add('failed');
-      // Highlight the correct word briefly so they know the answer?
-      // The user didn't ask for it, but "incorrect answers to stay marked incorrect"
-    }
-
-    this.updateProgress();
-
-    const nextCard = card.nextElementSibling;
-    if (nextCard && !nextCard.classList.contains('finish-container')) {
-      setTimeout(() => {
-        nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 600);
+      card.dataset.hadError = "true";
     }
   }
 
   updateProgress() {
     const progressText = this.shadowRoot.querySelector('.progress-text');
     if (progressText) {
-      progressText.textContent = `Results: ${this.score} / ${this.data.length}`;
+      if (this.unscrambleData.length > 0 && this.currentUnscrambleIndex < this.unscrambleData.length) {
+        progressText.textContent = `Unscramble: ${this.currentUnscrambleIndex + 1} / ${this.unscrambleData.length}`;
+      } else {
+        progressText.textContent = `Results: ${this.score} / ${this.data.length}`;
+      }
     }
+  }
+
+  startUnscrambleActivity() {
+    // Pick 5 random sentences
+    const shuffled = [...this.data].sort(() => 0.5 - Math.random());
+    this.unscrambleData = shuffled.slice(0, 5).map(item => {
+      const words = item.original.split(/\s+/).filter(w => w.length > 0);
+      const shuffledWords = [...words].sort(() => 0.5 - Math.random());
+      return {
+        ...item,
+        correctWords: words,
+        shuffledWords: shuffledWords
+      };
+    });
+
+    this.currentUnscrambleIndex = 0;
+    this.unscrambleScore = 0;
+    this.userUnscrambledWords = [];
+
+    this.renderUnscrambleChallenge();
+    this.updateProgress();
+  }
+
+  renderUnscrambleChallenge() {
+    const container = this.shadowRoot.querySelector('.story-container');
+    container.innerHTML = '';
+
+    const challenge = this.unscrambleData[this.currentUnscrambleIndex];
+
+    const unscrambleCard = document.createElement('div');
+    unscrambleCard.classList.add('card', 'unscramble-card', 'playing');
+
+    const title = document.createElement('h3');
+    title.textContent = "Unscramble the Sentence";
+    unscrambleCard.appendChild(title);
+
+    const translation = document.createElement('div');
+    translation.classList.add('full-translation');
+    translation.style.fontSize = "1.2em";
+    translation.textContent = challenge.fullTranslation;
+    unscrambleCard.appendChild(translation);
+
+    const resultArea = document.createElement('div');
+    resultArea.classList.add('unscramble-result');
+    unscrambleCard.appendChild(resultArea);
+
+    const poolArea = document.createElement('div');
+    poolArea.classList.add('unscramble-pool');
+    unscrambleCard.appendChild(poolArea);
+
+    const updateUI = () => {
+      resultArea.innerHTML = '';
+      this.userUnscrambledWords.forEach((word, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = word;
+        btn.onclick = () => {
+          this.userUnscrambledWords.splice(idx, 1);
+          updateUI();
+        };
+        resultArea.appendChild(btn);
+      });
+
+      poolArea.innerHTML = '';
+      challenge.shuffledWords.forEach((word, idx) => {
+        // Only show if not already picked (simplified: count occurrences)
+        const pickedCount = this.userUnscrambledWords.filter(w => w === word).length;
+        const totalCount = challenge.shuffledWords.filter(w => w === word).length;
+
+        if (pickedCount < totalCount) {
+          const btn = document.createElement('button');
+          btn.textContent = word;
+          btn.onclick = () => {
+            this.userUnscrambledWords.push(word);
+            updateUI();
+          };
+          poolArea.appendChild(btn);
+        }
+      });
+    };
+
+    updateUI();
+
+    const actions = document.createElement('div');
+    actions.classList.add('unscramble-actions');
+
+    const skipBtn = document.createElement('button');
+    skipBtn.textContent = 'Skip';
+    skipBtn.style.opacity = "0.7";
+    skipBtn.onclick = () => {
+      this.currentUnscrambleIndex++;
+      this.userUnscrambledWords = [];
+      if (this.currentUnscrambleIndex < this.unscrambleData.length) {
+        this.renderUnscrambleChallenge();
+        this.updateProgress();
+      } else {
+        this.showFinalForm();
+      }
+    };
+
+    const checkBtn = document.createElement('button');
+    checkBtn.textContent = 'Check';
+    checkBtn.classList.add('finish-btn');
+    checkBtn.style.padding = "0.8em 2em";
+    checkBtn.onclick = () => {
+      const isCorrect = this.userUnscrambledWords.join(' ') === challenge.correctWords.join(' ');
+      if (isCorrect) {
+        this.unscrambleScore++;
+        checkBtn.textContent = 'Correct! Next';
+        checkBtn.classList.add('success');
+        checkBtn.onclick = () => {
+          this.currentUnscrambleIndex++;
+          this.userUnscrambledWords = [];
+          if (this.currentUnscrambleIndex < this.unscrambleData.length) {
+            this.renderUnscrambleChallenge();
+            this.updateProgress();
+          } else {
+            this.showFinalForm();
+          }
+        };
+      } else {
+        checkBtn.classList.add('error');
+        setTimeout(() => checkBtn.classList.remove('error'), 500);
+      }
+    };
+
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset';
+    resetBtn.onclick = () => {
+      this.userUnscrambledWords = [];
+      updateUI();
+    };
+
+    actions.appendChild(resetBtn);
+    actions.appendChild(skipBtn);
+    actions.appendChild(checkBtn);
+    unscrambleCard.appendChild(actions);
+
+    container.appendChild(unscrambleCard);
+    unscrambleCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   showFinalForm() {
@@ -372,8 +530,8 @@ class LblReader extends HTMLElement {
       <div class="report-card">
         <h3>📄 Report Card: ${storyTitle}</h3>
         <p><strong>Student:</strong> ${nickname} (${number})</p>
-        <p><strong>Final Score:</strong> ${this.score} / ${this.data.length} Correct</p>
-        <p><strong>Attempted:</strong> ${this.answeredCount} / ${this.data.length} cards</p>
+        <p><strong>Translation Score:</strong> ${this.score} / ${this.data.length}</p>
+        <p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${this.unscrambleData.length}</p>
         <p><strong>Completed On:</strong> ${timestamp}</p>
         <button class="try-again-btn">Try Again</button>
       </div>
@@ -782,6 +940,46 @@ class LblReader extends HTMLElement {
           cursor: pointer;
           font-size: 0.9em;
           text-decoration: underline;
+        }
+
+        .unscramble-card h3 {
+          margin-top: 0;
+          color: #2563eb;
+        }
+
+        .unscramble-result {
+          min-height: 3em;
+          border-bottom: 2px dashed #e2e8f0;
+          margin-bottom: 1em;
+          padding: 0.5em;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5em;
+          justify-content: center;
+        }
+
+        .unscramble-pool {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5em;
+          justify-content: center;
+          margin-bottom: 2em;
+        }
+
+        .unscramble-actions {
+          display: flex;
+          gap: 1em;
+          justify-content: center;
+        }
+
+        .unscramble-result button {
+          background: #eff6ff;
+          border-color: #bfdbfe;
+          color: #2563eb;
+        }
+
+        .unscramble-pool button {
+          background: #f8fafc;
         }
       </style>
       <div class="sticky-bar">
