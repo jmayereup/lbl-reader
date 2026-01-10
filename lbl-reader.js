@@ -18,6 +18,13 @@ class LblReader extends HTMLElement {
     this.currentUnscrambleIndex = 0;
     this.unscrambleScore = 0;
     this.userUnscrambledWords = [];
+
+    // Memory Matching activity state
+    this.memoryGameData = [];
+    this.flippedCards = [];
+    this.matchedPairsCount = 0;
+    this.matchingGamesCompleted = 0;
+    this.isCheckingMatch = false;
   }
 
   connectedCallback() {
@@ -54,6 +61,7 @@ class LblReader extends HTMLElement {
         this.currentUnscrambleIndex = 0;
         this.unscrambleScore = 0;
         this.userUnscrambledWords = [];
+        this.matchingGamesCompleted = 0;
         this.updateProgress();
       }
     } catch (e) {
@@ -351,8 +359,10 @@ class LblReader extends HTMLElement {
   updateProgress() {
     const progressText = this.shadowRoot.querySelector('.progress-text');
     if (progressText) {
-      if (this.unscrambleData.length > 0 && this.currentUnscrambleIndex < this.unscrambleData.length) {
+      if (this.unscrambleData && this.unscrambleData.length > 0 && this.currentUnscrambleIndex < this.unscrambleData.length) {
         progressText.textContent = `Unscramble: ${this.currentUnscrambleIndex + 1} / ${this.unscrambleData.length}`;
+      } else if (this.memoryGameData && this.memoryGameData.length > 0 && this.matchedPairsCount < (this.memoryGameData.length / 2)) {
+        progressText.textContent = `Memory Game: ${this.matchedPairsCount} / ${this.memoryGameData.length / 2}`;
       } else {
         progressText.textContent = `Results: ${this.score} / ${this.data.length}`;
       }
@@ -462,7 +472,7 @@ class LblReader extends HTMLElement {
         this.renderUnscrambleChallenge();
         this.updateProgress();
       } else {
-        this.showFinalForm();
+        this.startMemoryGame();
       }
     };
 
@@ -483,7 +493,7 @@ class LblReader extends HTMLElement {
             this.renderUnscrambleChallenge();
             this.updateProgress();
           } else {
-            this.showFinalForm();
+            this.startMemoryGame();
           }
         };
       } else {
@@ -506,6 +516,130 @@ class LblReader extends HTMLElement {
 
     container.appendChild(unscrambleCard);
     unscrambleCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  startMemoryGame() {
+    this.matchingGamesCompleted++;
+    this.matchedPairsCount = 0;
+    this.flippedCards = [];
+    this.isCheckingMatch = false;
+
+    // Collect all unique word pairs from data
+    const allPairs = this.data.map(item => ({
+      original: item.original.split(/\s+/)[item.highlightIndex].replace(/[.,!?;:]/g, ''),
+      translation: item.shuffledOptions[item.newCorrectIndex]
+    }));
+
+    // Pick 6 random unique pairs
+    const uniquePairs = [];
+    const usedIndices = new Set();
+    while (uniquePairs.length < 6 && usedIndices.size < allPairs.length) {
+      const idx = Math.floor(Math.random() * allPairs.length);
+      if (!usedIndices.has(idx)) {
+        uniquePairs.push(allPairs[idx]);
+        usedIndices.add(idx);
+      }
+    }
+
+    // Prepare cards: 2 for each pair
+    const cards = [];
+    uniquePairs.forEach((pair, index) => {
+      cards.push({ id: index, type: 'original', text: pair.original, lang: this.getAttribute('lang-original') || 'en' });
+      cards.push({ id: index, type: 'translation', text: pair.translation, lang: this.getAttribute('lang-translation') || 'th' });
+    });
+
+    // Shuffle cards
+    this.memoryGameData = cards.sort(() => 0.5 - Math.random());
+
+    this.renderMemoryGameUI();
+    this.updateProgress();
+  }
+
+  renderMemoryGameUI() {
+    const container = this.shadowRoot.querySelector('.story-container');
+    container.innerHTML = '';
+
+    const gameHeader = document.createElement('div');
+    gameHeader.classList.add('memory-game-header');
+    gameHeader.innerHTML = `
+      <h3>Memory Matching Game</h3>
+      <p>Match the word with its translation!</p>
+    `;
+    container.appendChild(gameHeader);
+
+    const grid = document.createElement('div');
+    grid.classList.add('memory-grid');
+
+    this.memoryGameData.forEach((cardData, idx) => {
+      const card = document.createElement('div');
+      card.classList.add('memory-card');
+      card.dataset.index = idx;
+      card.innerHTML = `
+        <div class="memory-card-inner">
+          <div class="memory-card-front">?</div>
+          <div class="memory-card-back">${cardData.text}</div>
+        </div>
+      `;
+      card.onclick = () => this.handleMemoryCardFlip(card, cardData);
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+
+    const gameActions = document.createElement('div');
+    gameActions.classList.add('memory-game-actions');
+
+    const playAgainBtn = document.createElement('button');
+    playAgainBtn.textContent = 'Play Again (New Words)';
+    playAgainBtn.onclick = () => this.startMemoryGame();
+    gameActions.appendChild(playAgainBtn);
+
+    const finishBtn = document.createElement('button');
+    finishBtn.textContent = 'Finish & See Report';
+    finishBtn.classList.add('finish-btn');
+    finishBtn.onclick = () => this.showFinalForm();
+    gameActions.appendChild(finishBtn);
+
+    container.appendChild(gameActions);
+  }
+
+  handleMemoryCardFlip(cardElement, cardData) {
+    if (this.isCheckingMatch || cardElement.classList.contains('flipped') || cardElement.classList.contains('matched')) {
+      return;
+    }
+
+    this._speak(cardData.text, cardData.lang);
+    cardElement.classList.add('flipped');
+    this.flippedCards.push({ element: cardElement, data: cardData });
+
+    if (this.flippedCards.length === 2) {
+      this.isCheckingMatch = true;
+      const [card1, card2] = this.flippedCards;
+
+      if (card1.data.id === card2.data.id) {
+        // Match!
+        setTimeout(() => {
+          card1.element.classList.add('matched');
+          card2.element.classList.add('matched');
+          this.matchedPairsCount++;
+          this.flippedCards = [];
+          this.isCheckingMatch = false;
+          this.updateProgress();
+
+          if (this.matchedPairsCount === (this.memoryGameData.length / 2)) {
+            // Game Won!
+          }
+        }, 600);
+      } else {
+        // No match
+        setTimeout(() => {
+          card1.element.classList.remove('flipped');
+          card2.element.classList.remove('flipped');
+          this.flippedCards = [];
+          this.isCheckingMatch = false;
+        }, 1200);
+      }
+    }
   }
 
   showFinalForm() {
@@ -539,10 +673,12 @@ class LblReader extends HTMLElement {
     const reportArea = this.shadowRoot.querySelector('.report-area');
     reportArea.innerHTML = `
       <div class="report-card">
-        <h3>📄 Report Card: ${storyTitle}</h3>
+        <div class="report-icon">📄</div>
+        <h3>Report Card: ${storyTitle}</h3>
         <p><strong>Student:</strong> ${nickname} (${number})</p>
         <p><strong>Translation Score:</strong> ${this.score} / ${this.data.length}</p>
         <p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${this.unscrambleData.length}</p>
+        <p><strong>Matching Games:</strong> ${this.matchingGamesCompleted}</p>
         <p><strong>Completed On:</strong> ${timestamp}</p>
         <button class="try-again-btn">Try Again</button>
       </div>
@@ -993,6 +1129,106 @@ class LblReader extends HTMLElement {
 
         .unscramble-pool button {
           background: #f8fafc;
+        }
+
+        .memory-game-header {
+          text-align: center;
+          margin-bottom: 2em;
+        }
+
+        .memory-game-header h3 {
+          color: #2563eb;
+          margin: 0;
+        }
+
+        .memory-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1em;
+          width: 100%;
+          max-width: 500px;
+          margin: 0 auto 2em auto;
+          padding: 1em;
+          box-sizing: border-box;
+        }
+
+        .memory-card {
+          aspect-ratio: 4/5;
+          perspective: 1000px;
+          cursor: pointer;
+          min-height: 100px;
+        }
+
+        .memory-card-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          text-align: center;
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-style: preserve-3d;
+          border-radius: 0.8em;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .memory-card.flipped .memory-card-inner {
+          transform: rotateY(180deg);
+        }
+
+        .memory-card-front, .memory-card-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 0.8em;
+          padding: 0.5em;
+          font-weight: 600;
+          font-size: 0.9em;
+          box-sizing: border-box;
+          border: 1px solid #e2e8f0;
+        }
+
+        .memory-card-front {
+          background-color: #2563eb;
+          color: white;
+          font-size: 2em;
+          box-shadow: inset 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .memory-card-back {
+          background-color: white;
+          color: #1e293b;
+          transform: rotateY(180deg);
+          word-break: break-word;
+          font-size: 1.1em;
+          padding: 0.8em;
+          line-height: 1.2;
+        }
+
+        .memory-card.matched .memory-card-inner {
+          box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+          border: 2px solid #22c55e;
+        }
+
+        .memory-game-actions {
+          display: flex;
+          gap: 1em;
+          justify-content: center;
+          margin-top: 2em;
+        }
+
+        .report-icon {
+          font-size: 3em;
+          margin-bottom: 0.5em;
+          text-align: center;
+        }
+
+        @media (min-width: 600px) {
+          .memory-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
         }
       </style>
       <div class="sticky-bar">
