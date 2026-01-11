@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tj-death-by-grammar Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="tj-death-by-grammar.js" defer></script>
+    <style>
+        body {
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 style="text-align: center;">Grammar Practice Test</h1>
+
+    <tj-death-by-grammar hearts="3" round-size="3">
+        <script type="application/json">
+        {
+            "hint": {
+                "summary": "Present Simple vs Present Continuous",
+                "content": "Use **Present Simple** for habits (e.g., *I eat every day*).\n\nUse **Present Continuous** for things happening right now (e.g., *I am eating now*)."
+            },
+            "questions": [
+                {
+                    "type": "multiple-choice",
+                    "question": "Choose the correct form:",
+                    "options": ["She runs every morning.", "She is running every morning.", "She run every morning."],
+                    "correctIndex": 0,
+                    "explanation": "We use **Present Simple** for habits like 'every morning'. 'She runs' is the correct third-person singular form."
+                },
+                {
+                    "type": "fill-in-the-blank",
+                    "question": "**Fill the gap:**",
+                    "sentence": "I ___ to school right now. (walk)",
+                    "answer": "am walking",
+                    "explanation": "The time signal '**right now**' indicates an action in progress, so we use **Present Continuous** (am/is/are + verb-ing)."
+                },
+                {
+                    "type": "scramble",
+                    "question": "Unscramble the sentence:",
+                    "sentence": "They are playing football in the park.",
+                    "explanation": "**Present Continuous** is used here for an ongoing action: Subject + are + playing."
+                }
+            ]
+        }
+        </script>
+    </tj-death-by-grammar>
+</body>
+
+</html>
