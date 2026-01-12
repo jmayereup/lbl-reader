@@ -89,6 +89,32 @@ A gamified grammar practice component with multiple-choice, fill-in-the-blank, a
 - `hearts`: Number of lives before game over (default: 3).
 - `round-size`: Number of questions per round (default: 5).
 
+### Speed Review (`tj-speed-review`)
+
+A fast-paced review activity with a countdown timer. Points are awarded based on how quickly the student answers.
+
+**Attributes:**
+- `time-limit`: Seconds per question (default: `15`).
+- `round-size`: Number of questions to pick from the pool (default: `10`).
+
+**JSON Schema:**
+```json
+[
+  {
+    "title": "Topic Title",
+    "questions": [
+      {
+        "category": "Optional Label",
+        "question": "The question text...",
+        "options": ["Choice A", "Choice B", "Choice C"],
+        "answer": "Choice A",
+        "explanation": "Markdown **feedback**..."
+      }
+    ]
+  }
+]
+```
+
 ## How to use in a Blog (WordPress, Blogger, etc.)
 
 1.  **Upload the JavaScript files**: Host `lbl-reader.js` and `grammar-hearts.js` on your server or a CDN.
