@@ -13,7 +13,7 @@ class LblReader extends HTMLElement {
     this.isPaused = false;
     this.playbackUtterance = null;
 
-    // Unscramble activity state
+    this.isAutoplay = true;
     this.unscrambleData = [];
     this.currentUnscrambleIndex = 0;
     this.unscrambleScore = 0;
@@ -115,7 +115,7 @@ class LblReader extends HTMLElement {
       playBtn.classList.add('voice-btn');
       playBtn.onclick = () => {
         if (this.isPlayingAll) this.stopFullPlayback();
-        this._speak(lineData.original, langOrg);
+        this.playLine(index, false);
       };
 
       header.appendChild(originalText);
@@ -182,13 +182,10 @@ class LblReader extends HTMLElement {
   }
 
   startFullPlayback() {
-    if (this.playbackIndex >= this.data.length) {
-      this.playbackIndex = 0;
-    }
     this.isPlayingAll = true;
     this.isPaused = false;
     this.updatePlaybackUI();
-    this.playLine(this.playbackIndex);
+    this.playLine(this.playbackIndex, true);
   }
 
   pauseFullPlayback() {
@@ -212,11 +209,9 @@ class LblReader extends HTMLElement {
     this.updatePlaybackUI();
   }
 
-  playLine(index) {
-    if (!this.isPlayingAll || this.isPaused) return;
-
+  playLine(index, continueNext = false) {
     if (index >= this.data.length) {
-      this.stopFullPlayback();
+      if (continueNext) this.stopFullPlayback();
       return;
     }
 
@@ -226,8 +221,8 @@ class LblReader extends HTMLElement {
 
     this.highlightCard(index);
     this.playbackUtterance = this._speak(lineData.original, langOrg, () => {
-      if (this.isPlayingAll && !this.isPaused) {
-        this.playLine(index + 1);
+      if (continueNext && this.isPlayingAll && !this.isPaused) {
+        this.playLine(index + 1, true);
       }
     });
   }
@@ -352,6 +347,9 @@ class LblReader extends HTMLElement {
       if (nextCard && !nextCard.classList.contains('finish-container')) {
         setTimeout(() => {
           nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (this.isAutoplay) {
+            this.playLine(cardIndex + 1, false);
+          }
         }, 600);
       }
     } else {
@@ -729,8 +727,67 @@ class LblReader extends HTMLElement {
 
         .playback-controls {
           display: flex;
-          gap: 0.5em;
+          gap: 1em;
           align-items: center;
+        }
+
+        .autoplay-toggle-container {
+          display: flex;
+          align-items: center;
+          gap: 0.8em;
+          padding: 0.4em 0.8em;
+          background: rgba(248, 250, 252, 0.5);
+          border-radius: 2em;
+          border: 1px solid #e2e8f0;
+          font-size: 0.85em;
+          font-weight: 600;
+          color: #475569;
+          user-select: none;
+        }
+
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 32px;
+          height: 18px;
+        }
+
+        .switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #cbd5e1;
+          transition: .4s;
+          border-radius: 18px;
+        }
+
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 14px;
+          width: 14px;
+          left: 2px;
+          bottom: 2px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+
+        input:checked + .slider {
+          background-color: #2563eb;
+        }
+
+        input:checked + .slider:before {
+          transform: translateX(14px);
         }
 
         .control-btn {
@@ -1239,6 +1296,13 @@ class LblReader extends HTMLElement {
       </style>
       <div class="sticky-bar">
         <div class="playback-controls">
+          <div class="autoplay-toggle-container" id="autoplay-container">
+            <span>Auto-Play</span>
+            <label class="switch">
+              <input type="checkbox" id="autoplay-checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
           <button class="control-btn" id="play-pause-btn">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> 
             <span>Play Story</span>
@@ -1275,6 +1339,15 @@ class LblReader extends HTMLElement {
     this.shadowRoot.querySelector('.generate-btn').onclick = () => this.generateReport();
     this.shadowRoot.querySelector('#play-pause-btn').onclick = () => this.toggleFullPlayback();
     this.shadowRoot.querySelector('#stop-btn').onclick = () => this.stopFullPlayback();
+
+    const autoplayCheckbox = this.shadowRoot.querySelector('#autoplay-checkbox');
+    autoplayCheckbox.onchange = (e) => {
+      this.isAutoplay = e.target.checked;
+    };
+
+    if (!this._shouldShowAudioControls()) {
+      this.shadowRoot.querySelector('#autoplay-container').style.display = 'none';
+    }
   }
 }
 
