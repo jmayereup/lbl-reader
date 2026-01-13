@@ -351,6 +351,15 @@ class LblReader extends HTMLElement {
             this.playLine(cardIndex + 1, false);
           }
         }, 600);
+      } else {
+        // Last card correctly answered
+        setTimeout(() => {
+          this.clearPlaybackHighlights();
+          const finishBtn = this.shadowRoot.querySelector('.finish-btn');
+          if (finishBtn) {
+            finishBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 600);
       }
     } else {
       button.classList.add('error');
