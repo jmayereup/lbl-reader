@@ -25,6 +25,7 @@ class LblReader extends HTMLElement {
     this.matchedPairsCount = 0;
     this.matchingGamesCompleted = 0;
     this.isCheckingMatch = false;
+    this.isSwapped = false;
   }
 
   connectedCallback() {
@@ -56,10 +57,16 @@ class LblReader extends HTMLElement {
             const j = Math.floor(Math.random() * (i + 1));
             [options[i], options[j]] = [options[j], options[i]];
           }
+
+          const words = item.original.split(/\s+/);
+          const originalWord = (words[item.highlightIndex] || '').replace(/[.,!?;:]/g, '');
+
           return {
             ...item,
             shuffledOptions: options,
-            newCorrectIndex: options.indexOf(correctWord)
+            newCorrectIndex: options.indexOf(correctWord),
+            originalWord: originalWord,
+            translationWord: correctWord
           };
         });
         this.displayAllLines();
@@ -83,6 +90,7 @@ class LblReader extends HTMLElement {
     this.answeredCount = 0;
 
     const langOrg = this.getAttribute('lang-original') || 'en';
+    const langTrans = this.getAttribute('lang-translation') || 'th';
 
     this.data.forEach((lineData, index) => {
       const card = document.createElement('div');
@@ -99,7 +107,8 @@ class LblReader extends HTMLElement {
         const span = document.createElement('span');
         span.textContent = word + ' ';
         span.classList.add('tts-word');
-        if (wIdx === lineData.highlightIndex) {
+        // Only highlight if NOT swapped
+        if (!this.isSwapped && wIdx === lineData.highlightIndex) {
           span.classList.add('highlight');
         }
         span.onclick = (e) => {
@@ -123,7 +132,22 @@ class LblReader extends HTMLElement {
 
       const fullTranslation = document.createElement('div');
       fullTranslation.classList.add('full-translation');
-      fullTranslation.textContent = lineData.fullTranslation;
+      // Render translation using spans so it can be highlighted when swapped
+      lineData.fullTranslation.split(' ').forEach((word, wIdx) => {
+        const span = document.createElement('span');
+        span.textContent = word + ' ';
+        span.classList.add('tts-word');
+        // Only highlight if IS swapped
+        if (this.isSwapped && wIdx === lineData.highlightIndex) {
+          span.classList.add('highlight');
+        }
+        span.onclick = (e) => {
+          e.stopPropagation();
+          if (this.isPlayingAll) this.stopFullPlayback();
+          this._speak(word.replace(/[.,!?;:]/g, ''), langTrans);
+        };
+        fullTranslation.appendChild(span);
+      });
 
       const translationOptions = document.createElement('div');
       translationOptions.classList.add('translation-options');
@@ -246,7 +270,7 @@ class LblReader extends HTMLElement {
     if (!playPauseBtn) return;
 
     if (!this.isPlayingAll) {
-      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span>Play Story</span>`;
+      playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span>All</span>`;
     } else if (this.isPaused) {
       playPauseBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span>Resume</span>`;
     } else {
@@ -375,9 +399,9 @@ class LblReader extends HTMLElement {
       if (this.unscrambleData && this.unscrambleData.length > 0 && this.currentUnscrambleIndex < this.unscrambleData.length) {
         progressText.textContent = `Unscramble: ${this.currentUnscrambleIndex + 1} / ${this.unscrambleData.length}`;
       } else if (this.memoryGameData && this.memoryGameData.length > 0 && this.matchedPairsCount < (this.memoryGameData.length / 2)) {
-        progressText.textContent = `Memory Game: ${this.matchedPairsCount} / ${this.memoryGameData.length / 2}`;
+        progressText.textContent = `Memory: ${this.matchedPairsCount} / ${this.memoryGameData.length / 2}`;
       } else {
-        progressText.textContent = `Results: ${this.score} / ${this.data.length}`;
+        progressText.textContent = `${this.score} / ${this.data.length}`;
       }
     }
   }
@@ -398,6 +422,12 @@ class LblReader extends HTMLElement {
     this.currentUnscrambleIndex = 0;
     this.unscrambleScore = 0;
     this.userUnscrambledWords = [];
+
+    const langOrg = this.getAttribute('lang-original') || 'en';
+    if (langOrg === 'th') {
+      this.startMemoryGame();
+      return;
+    }
 
     this.renderUnscrambleChallenge();
     this.updateProgress();
@@ -539,8 +569,8 @@ class LblReader extends HTMLElement {
 
     // Collect all unique word pairs from data
     const allPairs = this.data.map(item => ({
-      original: item.original.split(/\s+/)[item.highlightIndex].replace(/[.,!?;:]/g, ''),
-      translation: item.shuffledOptions[item.newCorrectIndex]
+      original: item.originalWord,
+      translation: item.translationWord
     }));
 
     // Pick 6 random unique pairs
@@ -704,6 +734,33 @@ class LblReader extends HTMLElement {
       this.shadowRoot.querySelector('.form-container').style.display = 'block';
       this.loadData(); // Re-shuffles and resets cards
     };
+  }
+
+  swapLanguages() {
+    const oldOrg = this.getAttribute('lang-original') || 'en';
+    const oldTrans = this.getAttribute('lang-translation') || 'th';
+
+    this.setAttribute('lang-original', oldTrans);
+    this.setAttribute('lang-translation', oldOrg);
+    this.isSwapped = !this.isSwapped;
+
+    this.data = this.data.map(item => {
+      const newOriginal = item.fullTranslation;
+      const newFullTranslation = item.original;
+      const newOriginalWord = item.translationWord;
+      const newTranslationWord = item.originalWord;
+
+      return {
+        ...item,
+        original: newOriginal,
+        fullTranslation: newFullTranslation,
+        originalWord: newOriginalWord,
+        translationWord: newTranslationWord,
+        // Keep options as requested
+      };
+    });
+
+    this.displayAllLines();
   }
 
   render() {
@@ -1297,7 +1354,27 @@ class LblReader extends HTMLElement {
           text-align: center;
         }
 
-        @media (min-width: 600px) {
+        @media (max-width: 600px) {
+          .sticky-bar {
+            padding: 0.5em 0.8em;
+            gap: 0.5em;
+          }
+          .playback-controls {
+            gap: 0.5em;
+          }
+          .control-btn span {
+            display: none;
+          }
+          .autoplay-toggle-container {
+            padding: 0.4em 0.5em;
+          }
+          .progress-text {
+            font-size: 0.9em;
+            white-space: nowrap;
+          }
+        }
+
+        @media (min-width: 601px) {
           .memory-grid {
             grid-template-columns: repeat(4, 1fr);
           }
@@ -1314,14 +1391,17 @@ class LblReader extends HTMLElement {
           </div>
           <button class="control-btn" id="play-pause-btn">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> 
-            <span>Play Story</span>
+            <span>All</span>
           </button>
           <button class="control-btn" id="stop-btn" title="Stop Playback">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
             <span>Stop</span>
           </button>
+          <button class="control-btn" id="swap-btn" title="Swap Languages">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+          </button>
         </div>
-        <div class="progress-text">Results: 0 / 0</div>
+        <div class="progress-text">0 / 0</div>
       </div>
       <div class="story-container"></div>
       <div class="form-overlay">
@@ -1348,6 +1428,7 @@ class LblReader extends HTMLElement {
     this.shadowRoot.querySelector('.generate-btn').onclick = () => this.generateReport();
     this.shadowRoot.querySelector('#play-pause-btn').onclick = () => this.toggleFullPlayback();
     this.shadowRoot.querySelector('#stop-btn').onclick = () => this.stopFullPlayback();
+    this.shadowRoot.querySelector('#swap-btn').onclick = () => this.swapLanguages();
 
     const autoplayCheckbox = this.shadowRoot.querySelector('#autoplay-checkbox');
     autoplayCheckbox.onchange = (e) => {
