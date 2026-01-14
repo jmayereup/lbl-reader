@@ -397,9 +397,11 @@ class LblReader extends HTMLElement {
     const progressText = this.shadowRoot.querySelector('.progress-text');
     if (progressText) {
       if (this.unscrambleData && this.unscrambleData.length > 0 && this.currentUnscrambleIndex < this.unscrambleData.length) {
-        progressText.textContent = `Unscramble: ${this.currentUnscrambleIndex + 1} / ${this.unscrambleData.length}`;
+        // Just show numbers as requested: 1 / 5
+        progressText.textContent = `${this.currentUnscrambleIndex + 1} / ${this.unscrambleData.length}`;
       } else if (this.memoryGameData && this.memoryGameData.length > 0 && this.matchedPairsCount < (this.memoryGameData.length / 2)) {
-        progressText.textContent = `Memory: ${this.matchedPairsCount} / ${this.memoryGameData.length / 2}`;
+        // Just show numbers as requested: 0 / 6
+        progressText.textContent = `${this.matchedPairsCount} / ${this.memoryGameData.length / 2}`;
       } else {
         progressText.textContent = `${this.score} / ${this.data.length}`;
       }
@@ -407,9 +409,41 @@ class LblReader extends HTMLElement {
   }
 
   startUnscrambleActivity() {
-    // Pick 5 random sentences
-    const shuffled = [...this.data].sort(() => 0.5 - Math.random());
-    this.unscrambleData = shuffled.slice(0, 5).map(item => {
+    // Filter out sentences that have been used too many times if possible
+    if (!this.unscrambleUsedSentences) {
+      this.unscrambleUsedSentences = new Set();
+    }
+
+    let availableIndices = String.keys ? Object.keys(this.data) : Array.from(this.data.keys());
+    availableIndices = availableIndices.map(i => parseInt(i));
+
+    const unusedIndices = availableIndices.filter(i => !this.unscrambleUsedSentences.has(i));
+
+    let selectedIndices = [];
+    if (unusedIndices.length >= 5) {
+      // We have enough unused sentences
+      selectedIndices = unusedIndices.sort(() => 0.5 - Math.random()).slice(0, 5);
+    } else {
+      // Not enough unused, take all unused and fill the rest with random ones
+      selectedIndices = [...unusedIndices];
+      const remainingNeeded = 5 - selectedIndices.length;
+      const otherIndices = availableIndices.filter(i => !unusedIndices.includes(i))
+        .sort(() => 0.5 - Math.random());
+      selectedIndices = selectedIndices.concat(otherIndices.slice(0, remainingNeeded));
+    }
+
+    // Mark as used
+    selectedIndices.forEach(i => this.unscrambleUsedSentences.add(i));
+
+    // If we've used all sentences, reset the set for the next round (so we don't get stuck)
+    if (this.unscrambleUsedSentences.size >= this.data.length) {
+      this.unscrambleUsedSentences.clear();
+      // But keep the current ones as "used" so we don't repeat them immediately in the next round of re-fills
+      selectedIndices.forEach(i => this.unscrambleUsedSentences.add(i));
+    }
+
+    this.unscrambleData = selectedIndices.map(idx => {
+      const item = this.data[idx];
       const words = item.original.split(/\s+/).filter(w => w.length > 0);
       const shuffledWords = [...words].sort(() => 0.5 - Math.random());
       return {
@@ -431,6 +465,44 @@ class LblReader extends HTMLElement {
 
     this.renderUnscrambleChallenge();
     this.updateProgress();
+  }
+
+  renderUnscrambleCompletion() {
+    const container = this.shadowRoot.querySelector('.story-container');
+    container.innerHTML = '';
+
+    const completionCard = document.createElement('div');
+    completionCard.classList.add('card', 'unscramble-card', 'playing');
+
+    const title = document.createElement('h3');
+    title.textContent = "Unscramble Activity Completed!";
+    completionCard.appendChild(title);
+
+    const message = document.createElement('p');
+    message.textContent = `You've completed this round. Do you want to play again with new sentences or continue to the next game?`;
+    completionCard.appendChild(message);
+
+    const actions = document.createElement('div');
+    actions.classList.add('unscramble-actions');
+    actions.style.marginTop = "2em";
+    actions.style.flexDirection = "column";
+    actions.style.alignItems = "center";
+
+    const playAgainBtn = document.createElement('button');
+    playAgainBtn.textContent = 'Play Again (New Sentences)';
+    playAgainBtn.onclick = () => this.startUnscrambleActivity();
+    actions.appendChild(playAgainBtn);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = 'Continue to Memory Game';
+    nextBtn.classList.add('finish-btn');
+    nextBtn.style.marginTop = "0.5em";
+    nextBtn.onclick = () => this.startMemoryGame();
+    actions.appendChild(nextBtn);
+
+    completionCard.appendChild(actions);
+    container.appendChild(completionCard);
+    completionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   renderUnscrambleChallenge() {
@@ -515,7 +587,7 @@ class LblReader extends HTMLElement {
         this.renderUnscrambleChallenge();
         this.updateProgress();
       } else {
-        this.startMemoryGame();
+        this.renderUnscrambleCompletion();
       }
     };
 
@@ -536,7 +608,7 @@ class LblReader extends HTMLElement {
             this.renderUnscrambleChallenge();
             this.updateProgress();
           } else {
-            this.startMemoryGame();
+            this.renderUnscrambleCompletion();
           }
         };
       } else {
@@ -1218,6 +1290,14 @@ class LblReader extends HTMLElement {
           text-decoration: underline;
         }
 
+        .unscramble-card {
+          max-width: 600px;
+          margin-left: auto;
+          margin-right: auto;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
         .unscramble-card h3 {
           margin-top: 0;
           color: #2563eb;
@@ -1245,9 +1325,10 @@ class LblReader extends HTMLElement {
         .unscramble-actions {
           display: flex;
           gap: 1em;
-          font-size: 0.8em;
+          font-size: 0.9em;
           padding: 0.5em;
           justify-content: center;
+          flex-wrap: wrap;
         }
 
         .unscramble-result button {
