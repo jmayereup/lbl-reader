@@ -59,10 +59,13 @@ class LblReader extends HTMLElement {
           }
 
           const words = item.original.split(/\s+/);
-          const originalWord = (words[item.highlightIndex] || '').replace(/[.,!?;:]/g, '');
+          const start = item.highlightIndex;
+          const end = item.highlightIndexEnd !== undefined ? item.highlightIndexEnd : start;
+          const originalWord = words.slice(start, end + 1).join(' ').replace(/[.,!?;:]/g, '');
 
           return {
             ...item,
+            highlightIndexEnd: end,
             shuffledOptions: options,
             newCorrectIndex: options.indexOf(correctWord),
             originalWord: originalWord,
@@ -108,7 +111,8 @@ class LblReader extends HTMLElement {
         span.textContent = word + ' ';
         span.classList.add('tts-word');
         // Only highlight if NOT swapped
-        if (!this.isSwapped && wIdx === lineData.highlightIndex) {
+        // Only highlight if NOT swapped
+        if (!this.isSwapped && wIdx >= lineData.highlightIndex && wIdx <= lineData.highlightIndexEnd) {
           span.classList.add('highlight');
         }
         span.onclick = (e) => {
@@ -138,7 +142,8 @@ class LblReader extends HTMLElement {
         span.textContent = word + ' ';
         span.classList.add('tts-word');
         // Only highlight if IS swapped
-        if (this.isSwapped && wIdx === lineData.highlightIndex) {
+        // Only highlight if IS swapped
+        if (this.isSwapped && wIdx >= lineData.highlightIndex && wIdx <= lineData.highlightIndexEnd) {
           span.classList.add('highlight');
         }
         span.onclick = (e) => {
