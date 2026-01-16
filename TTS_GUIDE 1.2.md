@@ -42,6 +42,9 @@ _getBestVoice(lang) {
 }
 ```
 
+> [!TIP]
+> **Android Selection**: On Android, you must set `utterance.lang` even when `utterance.voice` is assigned. Without the lang property, the OS often ignores the specific voice choice.
+
 ## 3. Populating the Voice Dropdown
 The `speechSynthesis.getVoices()` list is populated asynchronously. You must listen for the `onvoiceschanged` event.
 
@@ -50,13 +53,25 @@ connectedCallback() {
   if (window.speechSynthesis.onvoiceschanged !== undefined) {
     window.speechSynthesis.onvoiceschanged = () => this._updateVoiceList();
   }
-  this._updateVoiceList(); // Try immediately too
+  this._updateVoiceList(); 
+  
+  // Mobile/Chrome Backup: Voices can load lazily
+  setTimeout(() => this._updateVoiceList(), 500);
+  setTimeout(() => this._updateVoiceList(), 1500);
 }
 
 _updateVoiceList() {
   const voices = window.speechSynthesis.getVoices();
   const select = document.querySelector('#voice-select');
   if (!select || voices.length === 0) return;
+
+  // Best Practice: Mobile devices usually have high-quality defaults.
+  // Hiding the selector on mobile keeps the UI clean.
+  const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isMobile) {
+    select.style.display = 'none';
+    return;
+  }
 
   const lang = "en-US"; // Your target language
   const langVoices = voices.filter(v => v.lang.startsWith(lang.split('-')[0]));
@@ -93,9 +108,10 @@ _speak(text, lang) {
   
   if (voice) {
     utterance.voice = voice;
-  } else {
-    utterance.lang = lang;
   }
+  
+  // Always set lang (critical for Android stability)
+  utterance.lang = lang;
 
   utterance.rate = 0.7; // Optional: slower speed for learners
   window.speechSynthesis.cancel(); // Stop current speech

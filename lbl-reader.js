@@ -40,8 +40,10 @@ class LblReader extends HTMLElement {
         this._updateVoiceList();
       };
     }
-    // Also try immediately
+    // Also try immediately and after short delays (mobile often needs this)
     this._updateVoiceList();
+    setTimeout(() => this._updateVoiceList(), 500);
+    setTimeout(() => this._updateVoiceList(), 1500);
   }
 
   loadData() {
@@ -215,6 +217,10 @@ class LblReader extends HTMLElement {
     return nonRobotic || langVoices[0];
   }
 
+  _isMobile() {
+    return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
+
   _updateVoiceList() {
     if (!window.speechSynthesis) return;
     const voices = window.speechSynthesis.getVoices();
@@ -230,7 +236,7 @@ class LblReader extends HTMLElement {
       langVoices = voices.filter(v => v.lang.split(/[-_]/)[0].toLowerCase() === langPrefix);
     }
 
-    if (langVoices.length === 0) {
+    if (langVoices.length === 0 || this._isMobile()) {
       voiceSelect.style.display = 'none';
       return;
     }
@@ -287,9 +293,10 @@ class LblReader extends HTMLElement {
 
     if (voiceToUse) {
       utterance.voice = voiceToUse;
-    } else {
-      utterance.lang = lang;
     }
+
+    // Always set lang (critical for Android stability even when voice is set)
+    utterance.lang = lang;
 
     utterance.rate = 0.7;
     if (onEnd) {
