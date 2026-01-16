@@ -26,6 +26,7 @@ class LblReader extends HTMLElement {
     this.matchingGamesCompleted = 0;
     this.isCheckingMatch = false;
     this.isSwapped = false;
+    this.selectedVoiceName = null;
   }
 
   connectedCallback() {
@@ -36,9 +37,11 @@ class LblReader extends HTMLElement {
     // Ensure voices are loaded (Chrome/Edge can be async)
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = () => {
-        // Pre-warm the cache if needed, but the getter handles it
+        this._updateVoiceList();
       };
     }
+    // Also try immediately
+    this._updateVoiceList();
   }
 
   loadData() {
@@ -194,11 +197,7 @@ class LblReader extends HTMLElement {
     const voices = window.speechSynthesis.getVoices();
     if (voices.length === 0) return null;
 
-    // Filter for the requested language
     const langPrefix = lang.split(/[-_]/)[0].toLowerCase();
-
-    // First, look for voices that EXACTLY match the lang (e.g. "en-US")
-    // Then fallback to just the prefix (e.g. "en")
     let langVoices = voices.filter(v => v.lang.toLowerCase() === lang.toLowerCase());
     if (langVoices.length === 0) {
       langVoices = voices.filter(v => v.lang.split(/[-_]/)[0].toLowerCase() === langPrefix);
@@ -206,21 +205,66 @@ class LblReader extends HTMLElement {
 
     if (langVoices.length === 0) return null;
 
-    // Preference priority for high-quality voices:
-    // 1. "Natural" (Microsoft Edge online voices)
-    // 2. "Google" (Chrome online voices)
-    // 3. "Premium" or "Siri" (Apple/System high quality)
     const priorities = ["natural", "google", "premium", "siri"];
-
     for (const p of priorities) {
       const found = langVoices.find(v => v.name.toLowerCase().includes(p));
       if (found) return found;
     }
 
-    // Default to the first voice for that language, preferably NOT "Microsoft" (non-natural)
-    // as those are usually the old robotic ones on Windows.
     const nonRobotic = langVoices.find(v => !v.name.toLowerCase().includes("microsoft"));
     return nonRobotic || langVoices[0];
+  }
+
+  _updateVoiceList() {
+    if (!window.speechSynthesis) return;
+    const voices = window.speechSynthesis.getVoices();
+    const voiceSelect = this.shadowRoot.querySelector('#voice-select');
+    if (!voiceSelect) return;
+
+    const langOrg = this.getAttribute('lang-original') || 'en';
+    const langPrefix = langOrg.split(/[-_]/)[0].toLowerCase();
+
+    // Filter voices for this language
+    let langVoices = voices.filter(v => v.lang.toLowerCase() === langOrg.toLowerCase());
+    if (langVoices.length === 0) {
+      langVoices = voices.filter(v => v.lang.split(/[-_]/)[0].toLowerCase() === langPrefix);
+    }
+
+    if (langVoices.length === 0) {
+      voiceSelect.style.display = 'none';
+      return;
+    }
+
+    voiceSelect.style.display = 'block';
+
+    // Save current selection if any
+    const currentVal = voiceSelect.value || this.selectedVoiceName;
+
+    voiceSelect.innerHTML = '';
+
+    // Always add "Best Voice" as first option (it's the dynamic default)
+    const bestVoice = this._getBestVoice(langOrg);
+
+    langVoices.sort((a, b) => a.name.localeCompare(b.name));
+
+    langVoices.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.name;
+      option.textContent = voice.name;
+      if (bestVoice && voice.name === bestVoice.name) {
+        option.textContent += ' (Best)';
+      }
+      voiceSelect.appendChild(option);
+    });
+
+    // Restore selection or default to best voice
+    if (currentVal && langVoices.some(v => v.name === currentVal)) {
+      voiceSelect.value = currentVal;
+      this.selectedVoiceName = currentVal;
+    } else if (bestVoice) {
+      voiceSelect.value = bestVoice.name;
+      this.selectedVoiceName = bestVoice.name;
+    }
   }
 
   _speak(text, lang, onEnd = null) {
@@ -231,9 +275,18 @@ class LblReader extends HTMLElement {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
 
-    const bestVoice = this._getBestVoice(lang);
-    if (bestVoice) {
-      utterance.voice = bestVoice;
+    let voiceToUse = null;
+    if (this.selectedVoiceName) {
+      const voices = window.speechSynthesis.getVoices();
+      voiceToUse = voices.find(v => v.name === this.selectedVoiceName);
+    }
+
+    if (!voiceToUse) {
+      voiceToUse = this._getBestVoice(lang);
+    }
+
+    if (voiceToUse) {
+      utterance.voice = voiceToUse;
     } else {
       utterance.lang = lang;
     }
@@ -1513,6 +1566,28 @@ class LblReader extends HTMLElement {
             grid-template-columns: repeat(4, 1fr);
           }
         }
+
+        #voice-select {
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 4px 8px;
+          font-size: 0.85em;
+          color: #1e293b;
+          max-width: 150px;
+          outline: none;
+          cursor: pointer;
+        }
+
+        #voice-select:hover {
+          border-color: #94a3b8;
+        }
+
+        @media (max-width: 600px) {
+          #voice-select {
+            max-width: 100px;
+          }
+        }
       </style>
       <div class="sticky-bar">
         <div class="playback-controls">
@@ -1534,6 +1609,7 @@ class LblReader extends HTMLElement {
           <button class="control-btn" id="swap-btn" title="Swap Languages">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
           </button>
+          <select id="voice-select" title="Choose Voice" style="display: none;"></select>
         </div>
         <div class="progress-text">0 / 0</div>
       </div>
@@ -1563,6 +1639,14 @@ class LblReader extends HTMLElement {
     this.shadowRoot.querySelector('#play-pause-btn').onclick = () => this.toggleFullPlayback();
     this.shadowRoot.querySelector('#stop-btn').onclick = () => this.stopFullPlayback();
     this.shadowRoot.querySelector('#swap-btn').onclick = () => this.swapLanguages();
+
+    const voiceSelect = this.shadowRoot.querySelector('#voice-select');
+    voiceSelect.onchange = (e) => {
+      this.selectedVoiceName = e.target.value;
+    };
+
+    // Initial population
+    this._updateVoiceList();
 
     const autoplayCheckbox = this.shadowRoot.querySelector('#autoplay-checkbox');
     autoplayCheckbox.onchange = (e) => {
