@@ -32,6 +32,13 @@ class LblReader extends HTMLElement {
     this.render();
     this.loadData();
     this.checkBrowserSupport();
+
+    // Ensure voices are loaded (Chrome/Edge can be async)
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        // Pre-warm the cache if needed, but the getter handles it
+      };
+    }
   }
 
   loadData() {
@@ -182,6 +189,40 @@ class LblReader extends HTMLElement {
     this.updateProgress();
   }
 
+  _getBestVoice(lang) {
+    if (!window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return null;
+
+    // Filter for the requested language
+    const langPrefix = lang.split(/[-_]/)[0].toLowerCase();
+
+    // First, look for voices that EXACTLY match the lang (e.g. "en-US")
+    // Then fallback to just the prefix (e.g. "en")
+    let langVoices = voices.filter(v => v.lang.toLowerCase() === lang.toLowerCase());
+    if (langVoices.length === 0) {
+      langVoices = voices.filter(v => v.lang.split(/[-_]/)[0].toLowerCase() === langPrefix);
+    }
+
+    if (langVoices.length === 0) return null;
+
+    // Preference priority for high-quality voices:
+    // 1. "Natural" (Microsoft Edge online voices)
+    // 2. "Google" (Chrome online voices)
+    // 3. "Premium" or "Siri" (Apple/System high quality)
+    const priorities = ["natural", "google", "premium", "siri"];
+
+    for (const p of priorities) {
+      const found = langVoices.find(v => v.name.toLowerCase().includes(p));
+      if (found) return found;
+    }
+
+    // Default to the first voice for that language, preferably NOT "Microsoft" (non-natural)
+    // as those are usually the old robotic ones on Windows.
+    const nonRobotic = langVoices.find(v => !v.name.toLowerCase().includes("microsoft"));
+    return nonRobotic || langVoices[0];
+  }
+
   _speak(text, lang, onEnd = null) {
     if (!window.speechSynthesis) {
       alert("Text-to-speech is not supported in this browser. Please try Chrome or Safari.");
@@ -189,7 +230,14 @@ class LblReader extends HTMLElement {
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
+
+    const bestVoice = this._getBestVoice(lang);
+    if (bestVoice) {
+      utterance.voice = bestVoice;
+    } else {
+      utterance.lang = lang;
+    }
+
     utterance.rate = 0.7;
     if (onEnd) {
       utterance.onend = onEnd;
