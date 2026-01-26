@@ -133,6 +133,16 @@ class GrammarHearts extends HTMLElement {
     this.scrambledWords = [];
   }
 
+  _normalizeText(text) {
+    if (typeof text !== 'string') return String(text || '');
+    return text
+      .trim()
+      .toLowerCase()
+      .replace(/[‘’]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/\s+/g, ' ');
+  }
+
   handleAnswer(answer) {
     if (this.isAnswered) return;
 
@@ -142,15 +152,15 @@ class GrammarHearts extends HTMLElement {
     if (q.type === 'multiple-choice') {
       correct = (answer === q.correctIndex);
     } else if (q.type === 'fill-in-the-blank') {
-      const userAnswer = (answer || '').trim().toLowerCase();
+      const userAnswer = this._normalizeText(answer);
       if (Array.isArray(q.answer)) {
-        correct = q.answer.some(a => (typeof a === 'string' ? a : String(a)).trim().toLowerCase() === userAnswer);
+        correct = q.answer.some(a => this._normalizeText(a) === userAnswer);
       } else if (typeof q.answer === 'string') {
-        correct = (userAnswer === q.answer.toLowerCase());
+        correct = (userAnswer === this._normalizeText(q.answer));
       }
     } else if (q.type === 'scramble') {
-      const canonicalTarget = q.sentence.trim().split(/\s+/).join(' ');
-      const canonicalUser = answer.trim().split(/\s+/).join(' ');
+      const canonicalTarget = this._normalizeText(q.sentence);
+      const canonicalUser = this._normalizeText(answer);
       correct = (canonicalUser === canonicalTarget);
     }
 
@@ -654,6 +664,12 @@ class GrammarHearts extends HTMLElement {
         ${content}
       </div>
     `;
+
+    // Auto-focus the input field if it's a fill-in-the-blank question
+    setTimeout(() => {
+      const input = this.shadowRoot.querySelector('#fib-answer');
+      if (input) input.focus();
+    }, 0);
   }
 
   renderMainText(q) {
@@ -690,9 +706,13 @@ class GrammarHearts extends HTMLElement {
     } else if (q.type === 'fill-in-the-blank') {
       return `
         <input type="text" class="input-field" id="fib-answer" placeholder="Type your answer here..." 
-          ${this.isAnswered ? 'disabled' : ''} 
+          ${this.isAnswered ? 'readonly' : ''} 
           value="${this.isAnswered ? this.userAnswer : ''}"
-          onkeypress="if(event.key === 'Enter') this.getRootNode().host.handleAnswer(this.value)">
+          onkeydown="if(event.key === 'Enter') { 
+            const host = this.getRootNode().host;
+            if (host.isAnswered) host.nextQuestion();
+            else host.handleAnswer(this.value);
+          }">
         ${!this.isAnswered ? `<button class="btn" onclick="this.getRootNode().host.handleAnswer(this.parentElement.querySelector('#fib-answer').value)">Submit</button>` : ''}
       `;
     } else if (q.type === 'scramble') {
