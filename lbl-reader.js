@@ -27,6 +27,14 @@ class LblReader extends HTMLElement {
     this.isCheckingMatch = false;
     this.isSwapped = false;
     this.selectedVoiceName = null;
+
+    // Recording state
+    this.recordedBlobs = new Map(); // index -> Blob
+    this.recordedSentences = new Set(); // indices of valid recordings
+    this.isRecordingLine = null; // null or index
+    this.mediaRecorder = null;
+    this.recordingStartTime = 0;
+    this.isPlayingRecording = null; // null or index
   }
 
   connectedCallback() {
@@ -135,16 +143,9 @@ class LblReader extends HTMLElement {
         originalText.appendChild(span);
       });
 
-      const playBtn = document.createElement('button');
-      playBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-      playBtn.classList.add('voice-btn');
-      playBtn.onclick = () => {
-        if (this.isPlayingAll) this.stopFullPlayback();
-        this.playLine(index, false);
-      };
-
       header.appendChild(originalText);
-      header.appendChild(playBtn);
+      card.appendChild(header);
+      this.renderLineButtons(index, card);
 
       const fullTranslation = document.createElement('div');
       fullTranslation.classList.add('full-translation');
@@ -176,7 +177,6 @@ class LblReader extends HTMLElement {
         translationOptions.appendChild(btn);
       });
 
-      card.appendChild(header);
       card.appendChild(fullTranslation);
       card.appendChild(translationOptions);
       container.appendChild(card);
@@ -344,6 +344,133 @@ class LblReader extends HTMLElement {
     this.playbackIndex = 0;
     this.clearPlaybackHighlights();
     this.updatePlaybackUI();
+  }
+
+  async startRecording(index) {
+    if (this.isRecordingLine !== null) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      let chunks = [];
+
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const duration = Date.now() - this.recordingStartTime;
+
+        // Check if recording is long enough (e.g., > 600ms) to prevent "just clicking"
+        if (duration > 600) {
+          this.recordedBlobs.set(index, blob);
+          this.recordedSentences.add(index);
+        } else {
+          // Optional: handle "too short" feedback
+          console.warn('Recording too short to be counted.');
+        }
+
+        // Stop all tracks in the stream to release the mic
+        stream.getTracks().forEach(track => track.stop());
+
+        this.isRecordingLine = null;
+        this.renderLineButtons(index);
+      };
+
+      this.recordingStartTime = Date.now();
+      this.isRecordingLine = index;
+      this.mediaRecorder.start();
+      this.renderLineButtons(index);
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      alert('Could not access microphone. Please check permissions.');
+    }
+  }
+
+  stopRecording() {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
+  }
+
+  playRecordedAudio(index) {
+    const blob = this.recordedBlobs.get(index);
+    if (!blob) return;
+
+    // Reset any currently playing recording
+    if (this.isPlayingRecording !== null) {
+      // Logic to stop current recording if needed (simplified here)
+    }
+
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    this.isPlayingRecording = index;
+    this.renderLineButtons(index);
+
+    audio.play();
+    audio.onended = () => {
+      this.isPlayingRecording = null;
+      this.renderLineButtons(index);
+      URL.revokeObjectURL(url);
+    };
+  }
+
+  renderLineButtons(index, card = null) {
+    if (!card) card = this.shadowRoot.querySelector(`.card[data-index="${index}"]`);
+    if (!card) return;
+    const header = card.querySelector('.card-header');
+
+    // Find or create the button container
+    let btnGroup = header.querySelector('.card-btn-group');
+    if (!btnGroup) {
+      btnGroup = document.createElement('div');
+      btnGroup.classList.add('card-btn-group');
+      header.appendChild(btnGroup);
+    }
+
+    btnGroup.innerHTML = '';
+
+    // Original Play Button
+    const playBtn = document.createElement('button');
+    playBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+    playBtn.classList.add('voice-btn');
+    playBtn.title = "Play TTS";
+    playBtn.onclick = () => {
+      if (this.isPlayingAll) this.stopFullPlayback();
+      this.playLine(index, false);
+    };
+    btnGroup.appendChild(playBtn);
+
+    // Record Button
+    const recordBtn = document.createElement('button');
+    recordBtn.classList.add('record-btn');
+    if (this.isRecordingLine === index) {
+      recordBtn.classList.add('recording');
+      recordBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>`;
+      recordBtn.onclick = () => this.stopRecording();
+      recordBtn.title = "Stop Recording";
+    } else {
+      recordBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+      recordBtn.onclick = () => this.startRecording(index);
+      recordBtn.title = "Record Voice";
+    }
+    btnGroup.appendChild(recordBtn);
+
+    // Playback Recorded Button
+    if (this.recordedBlobs.has(index) && this.isRecordingLine !== index) {
+      const playRecordedBtn = document.createElement('button');
+      if (this.isPlayingRecording === index) {
+        playRecordedBtn.classList.add('play-recorded-btn', 'playing');
+        playRecordedBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`;
+      } else {
+        playRecordedBtn.classList.add('play-recorded-btn');
+        playRecordedBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>`;
+      }
+      playRecordedBtn.title = "Play Recording";
+      playRecordedBtn.onclick = () => this.playRecordedAudio(index);
+      btnGroup.appendChild(playRecordedBtn);
+    }
   }
 
   playLine(index, continueNext = false) {
@@ -905,6 +1032,7 @@ class LblReader extends HTMLElement {
         <h3>Report Card: ${storyTitle}</h3>
         <p><strong>Student:</strong> ${nickname} (${number})</p>
         <p><strong>Translation Score:</strong> ${this.score} / ${this.data.length}</p>
+        <p><strong>Sentences Recorded:</strong> ${this.recordedSentences.size} / ${this.data.length}</p>
         <p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${this.unscrambleData.length}</p>
         <p><strong>Matching Games:</strong> ${this.matchingGamesCompleted}</p>
         <p><strong>Completed On:</strong> ${timestamp}</p>
@@ -1180,10 +1308,100 @@ class LblReader extends HTMLElement {
           color: #64748b;
         }
 
+        .voice-btn {
+          background: #eef2ff;
+          border: 1px solid #c7d2fe;
+          padding: 0;
+          font-size: 1.1em;
+          border-radius: 50%;
+          width: 2.2em;
+          height: 2.2em;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          flex-shrink: 0;
+          color: #000033;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
         .voice-btn:hover {
-          background: #4c80b4ff;
-          color: #2563eb;
-          transform: scale(1.02);
+          background: #c7d2fe;
+          color: #000;
+          transform: scale(1.1);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .card-btn-group {
+          display: flex;
+          gap: 0.6em;
+          align-items: center;
+          padding: 0.4em;
+          background: #fdfdfd;
+          border-radius: 2em;
+          border: 1px solid #f1f5f9;
+        }
+
+        .record-btn, .play-recorded-btn {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          padding: 0;
+          border-radius: 50%;
+          width: 2.2em;
+          height: 2.2em;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #1a202c;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          flex-shrink: 0;
+        }
+
+        .record-btn:hover {
+          background: #fee2e2;
+          color: #b91c1c;
+          border-color: #fecaca;
+          transform: scale(1.1);
+        }
+
+        .record-btn.recording {
+          background: #ef4444;
+          color: white;
+          border-color: #dc2626;
+          animation: pulse 1.5s infinite;
+        }
+
+        .play-recorded-btn {
+          background: #f0fdf4;
+          color: #15803d;
+          border-color: #bbf7d0;
+        }
+
+        .play-recorded-btn.playing {
+          background: #15803d;
+          color: white;
+          border-color: #14532d;
+          animation: pulse-green 1.5s infinite;
+        }
+
+        .play-recorded-btn:hover {
+          background: #bbf7d0;
+          color: #14532d;
+          transform: scale(1.1);
+        }
+
+        @keyframes pulse-green {
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.7); }
+          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(21, 128, 61, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(21, 128, 61, 0); }
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
         .full-translation {
