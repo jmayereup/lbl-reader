@@ -1025,16 +1025,38 @@ class LblReader extends HTMLElement {
     const storyTitle = this.getAttribute('story-title') || 'Story Practice';
     const timestamp = new Date().toLocaleString();
 
+    // Calculate weighted percentage scores
+    const selectionRatio = this.data.length > 0 ? this.score / this.data.length : 0;
+    const recordingRatio = this.data.length > 0 ? this.recordedSentences.size / this.data.length : 0;
+    const scrambleRatio = this.unscrambleData.length > 0 ? this.unscrambleScore / this.unscrambleData.length : 0;
+    const memoryRatio = (this.memoryGameData.length > 0) ? (this.matchedPairsCount / (this.memoryGameData.length / 2)) : 0;
+
+    let weightSelection = 85;
+    let weightScramble = 10;
+    let weightMemory = 5;
+
+    // Handle skipped Unscramble activity (e.g. for Thai)
+    if (this.unscrambleData.length === 0) {
+      weightSelection += weightScramble;
+      weightScramble = 0;
+    }
+
+    const totalScoreNoRec = (selectionRatio * weightSelection) + (scrambleRatio * weightScramble) + (memoryRatio * weightMemory);
+    const totalScoreWithRec = (selectionRatio * (weightSelection / 2)) + (recordingRatio * (weightSelection / 2)) + (scrambleRatio * weightScramble) + (memoryRatio * weightMemory);
+
     const reportArea = this.shadowRoot.querySelector('.report-area');
     reportArea.innerHTML = `
       <div class="report-card">
         <div class="report-icon">📄</div>
         <h3>Report Card: ${storyTitle}</h3>
         <p><strong>Student:</strong> ${nickname} (${number})</p>
+        <p><strong>Overall Score:</strong> ${Math.round(totalScoreNoRec)}%</p>
+        <p><strong>Score (with recordings):</strong> ${Math.round(totalScoreWithRec)}%</p>
+        <hr style="margin: 1em 0; border: none; border-top: 1px solid #eee;">
         <p><strong>Translation Score:</strong> ${this.score} / ${this.data.length}</p>
         <p><strong>Sentences Recorded:</strong> ${this.recordedSentences.size} / ${this.data.length}</p>
-        <p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${this.unscrambleData.length}</p>
-        <p><strong>Matching Games:</strong> ${this.matchingGamesCompleted}</p>
+        ${this.unscrambleData.length > 0 ? `<p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${this.unscrambleData.length}</p>` : ''}
+        <p><strong>Matching Pairs:</strong> ${this.matchedPairsCount} / ${this.memoryGameData.length / 2}</p>
         <p><strong>Completed On:</strong> ${timestamp}</p>
         <button class="try-again-btn">Try Again</button>
       </div>
@@ -1062,7 +1084,7 @@ class LblReader extends HTMLElement {
 
         const playBtn = document.createElement('button');
         playBtn.classList.add('recording-play-btn');
-        playBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+        playBtn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
         playBtn.title = "Play Recording";
         playBtn.onclick = () => this.playRecordedAudio(idx);
 
@@ -1862,22 +1884,32 @@ class LblReader extends HTMLElement {
         }
 
         .recording-play-btn {
-          background: #2563eb;
-          color: white;
-          border: none;
+          background: #eef2ff;
+          color: #2563eb;
+          border: 1px solid #c7d2fe;
           border-radius: 50%;
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
+          padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           flex-shrink: 0;
-          transition: transform 0.1s;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-sizing: border-box;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .recording-play-btn:hover {
+          background: #c7d2fe;
+          color: #1a202c;
+          transform: scale(1.1);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
 
         .recording-play-btn:active {
-          transform: scale(0.9);
+          transform: scale(0.95);
         }
 
         .recording-text {
