@@ -351,7 +351,22 @@ class LblReader extends HTMLElement {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream);
+
+      // Determine supported MIME type (iOS Safari doesn't support webm)
+      let mimeType = 'audio/webm';
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // Let browser choose default
+          }
+        }
+      }
+
+      const options = mimeType ? { mimeType } : {};
+      this.mediaRecorder = new MediaRecorder(stream, options);
+      this._recordingMimeType = this.mediaRecorder.mimeType || mimeType || 'audio/webm';
+
       let chunks = [];
 
       this.mediaRecorder.ondataavailable = (e) => {
@@ -359,7 +374,7 @@ class LblReader extends HTMLElement {
       };
 
       this.mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: this._recordingMimeType });
         const duration = Date.now() - this.recordingStartTime;
 
         // Check if recording is long enough (e.g., > 600ms) to prevent "just clicking"
@@ -380,7 +395,9 @@ class LblReader extends HTMLElement {
 
       this.recordingStartTime = Date.now();
       this.isRecordingLine = index;
-      this.mediaRecorder.start();
+
+      // Use a timeslice (1000ms) - helps ensure data capture on some mobile browsers
+      this.mediaRecorder.start(1000);
       this.renderLineButtons(index);
     } catch (err) {
       console.error('Error starting recording:', err);
