@@ -32,6 +32,10 @@ class LblReader extends HTMLElement {
     this.recordedBlobs = new Map(); // index -> Blob
     this.recordedSentences = new Set(); // indices of valid recordings
     this.completedIndices = new Set(); // indices of correct translations
+    this.unscrambleCompleted = false;
+    this.memoryCompleted = false;
+    this.unscrambleTotal = 0;
+    this.memoryTotal = 0;
     this.isRecordingLine = null; // null or index
     this.mediaRecorder = null;
     this.recordingStartTime = 0;
@@ -743,6 +747,7 @@ class LblReader extends HTMLElement {
         shuffledWords: shuffledWords
       };
     });
+    this.unscrambleTotal = this.unscrambleData.length;
 
     this.currentUnscrambleIndex = 0;
     this.unscrambleScore = 0;
@@ -759,6 +764,7 @@ class LblReader extends HTMLElement {
   }
 
   renderUnscrambleCompletion() {
+    this.unscrambleCompleted = true;
     const container = this.shadowRoot.querySelector('.story-container');
     container.innerHTML = '';
 
@@ -956,6 +962,7 @@ class LblReader extends HTMLElement {
 
     // Shuffle cards
     this.memoryGameData = cards.sort(() => 0.5 - Math.random());
+    this.memoryTotal = this.memoryGameData.length / 2;
 
     this.renderMemoryGameUI();
     this.updateProgress();
@@ -1034,6 +1041,7 @@ class LblReader extends HTMLElement {
 
           if (this.matchedPairsCount === (this.memoryGameData.length / 2)) {
             // Game Won!
+            this.memoryCompleted = true;
           }
         }, 600);
       } else {
@@ -1054,9 +1062,6 @@ class LblReader extends HTMLElement {
 
     const formOverlay = this.shadowRoot.querySelector('.form-overlay');
     formOverlay.style.display = 'flex';
-
-    const stickyBar = this.shadowRoot.querySelector('.sticky-bar');
-    if (stickyBar) stickyBar.style.display = 'none';
 
     const nicknameInput = this.shadowRoot.querySelector('#nickname');
     const numberInput = this.shadowRoot.querySelector('#student-number');
@@ -1085,8 +1090,12 @@ class LblReader extends HTMLElement {
     // Calculate weighted percentage scores
     const selectionRatio = this.data.length > 0 ? this.score / this.data.length : 0;
     const recordingRatio = this.data.length > 0 ? this.recordedSentences.size / this.data.length : 0;
-    const scrambleRatio = this.unscrambleData.length > 0 ? this.unscrambleScore / this.unscrambleData.length : 0;
-    const memoryRatio = (this.memoryGameData.length > 0) ? (this.matchedPairsCount / (this.memoryGameData.length / 2)) : 0;
+
+    const unscrambleTotal = this.unscrambleData.length || this.unscrambleTotal;
+    const scrambleRatio = unscrambleTotal > 0 ? this.unscrambleScore / unscrambleTotal : 0;
+
+    const memoryTotal = (this.memoryGameData.length / 2) || this.memoryTotal;
+    const memoryRatio = memoryTotal > 0 ? (this.matchedPairsCount / memoryTotal) : 0;
 
     let weightSelection = 85;
     let weightScramble = 10;
@@ -1112,8 +1121,8 @@ class LblReader extends HTMLElement {
         <hr style="margin: 1em 0; border: none; border-top: 1px solid #eee;">
         <p><strong>Translation Score:</strong> ${this.score} / ${this.data.length}</p>
         <p><strong>Sentences Recorded:</strong> ${this.recordedSentences.size} / ${this.data.length}</p>
-        ${this.unscrambleData.length > 0 ? `<p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${this.unscrambleData.length}</p>` : ''}
-        <p><strong>Matching Pairs:</strong> ${this.matchedPairsCount} / ${this.memoryGameData.length / 2}</p>
+        ${unscrambleTotal > 0 ? `<p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${unscrambleTotal}</p>` : ''}
+        <p><strong>Matching Pairs:</strong> ${this.matchedPairsCount} / ${memoryTotal}</p>
         <p><strong>Completed On:</strong> ${timestamp}</p>
         <button class="try-again-btn">Try Again</button>
       </div>
@@ -1168,13 +1177,16 @@ class LblReader extends HTMLElement {
       this.shadowRoot.querySelector('.report-area').innerHTML = '';
       this.shadowRoot.querySelector('.form-container').style.display = 'block';
 
-      const stickyBar = this.shadowRoot.querySelector('.sticky-bar');
-      if (stickyBar) stickyBar.style.display = 'flex';
-
       // Persist recordings and correct answers on "Try Again"
       const currentRecordedBlobs = new Map(this.recordedBlobs);
       const currentRecordedSentences = new Set(this.recordedSentences);
       const currentCompletedIndices = new Set(this.completedIndices);
+      const currentUnscrambleScore = this.unscrambleScore;
+      const currentMatchedPairs = this.matchedPairsCount;
+      const currentUnscrambleCompleted = this.unscrambleCompleted;
+      const currentMemoryCompleted = this.memoryCompleted;
+      const currentUnscrambleTotal = this.unscrambleTotal;
+      const currentMemoryTotal = this.memoryTotal;
 
       this.loadData(); // Re-shuffles and resets cards
 
@@ -1182,6 +1194,12 @@ class LblReader extends HTMLElement {
       this.recordedBlobs = currentRecordedBlobs;
       this.recordedSentences = currentRecordedSentences;
       this.completedIndices = currentCompletedIndices;
+      this.unscrambleScore = currentUnscrambleScore;
+      this.matchedPairsCount = currentMatchedPairs;
+      this.unscrambleCompleted = currentUnscrambleCompleted;
+      this.memoryCompleted = currentMemoryCompleted;
+      this.unscrambleTotal = currentUnscrambleTotal;
+      this.memoryTotal = currentMemoryTotal;
 
       // Re-render the line buttons to show the recording playback buttons in the story view
       this.data.forEach((_, idx) => this.renderLineButtons(idx));
