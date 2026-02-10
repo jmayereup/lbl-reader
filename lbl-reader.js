@@ -31,6 +31,7 @@ class LblReader extends HTMLElement {
     // Recording state
     this.recordedBlobs = new Map(); // index -> Blob
     this.recordedSentences = new Set(); // indices of valid recordings
+    this.completedIndices = new Set(); // indices of correct translations
     this.isRecordingLine = null; // null or index
     this.mediaRecorder = null;
     this.recordingStartTime = 0;
@@ -109,8 +110,10 @@ class LblReader extends HTMLElement {
   displayAllLines() {
     const container = this.shadowRoot.querySelector('.story-container');
     container.innerHTML = '';
-    this.score = 0;
-    this.answeredCount = 0;
+
+    // Initialize score from completed indices
+    this.score = this.completedIndices.size;
+    this.answeredCount = this.completedIndices.size;
 
     const langOrg = this.getAttribute('lang-original') || 'en';
     const langTrans = this.getAttribute('lang-translation') || 'th';
@@ -170,10 +173,20 @@ class LblReader extends HTMLElement {
       const translationOptions = document.createElement('div');
       translationOptions.classList.add('translation-options');
 
+      const isCompleted = this.completedIndices.has(index);
+      if (isCompleted) {
+        card.classList.add('completed', 'answered');
+      }
+
       lineData.shuffledOptions.forEach((word, oIdx) => {
         const btn = document.createElement('button');
         btn.textContent = word;
         btn.addEventListener('click', () => this.handleSelection(index, oIdx, lineData.newCorrectIndex, btn, card));
+        if (isCompleted) {
+          btn.disabled = true;
+          if (oIdx !== lineData.newCorrectIndex) btn.style.opacity = '0.5';
+          else btn.classList.add('success');
+        }
         translationOptions.appendChild(btn);
       });
 
@@ -224,8 +237,9 @@ class LblReader extends HTMLElement {
   _updateVoiceList() {
     if (!window.speechSynthesis) return;
     const voices = window.speechSynthesis.getVoices();
-    const voiceSelect = this.shadowRoot.querySelector('#voice-select');
-    if (!voiceSelect) return;
+    const voiceList = this.shadowRoot.querySelector('.voice-list');
+    const voiceBtn = this.shadowRoot.querySelector('#voice-btn');
+    if (!voiceList || !voiceBtn) return;
 
     const langOrg = this.getAttribute('lang-original') || 'en';
     const langPrefix = langOrg.split(/[-_]/)[0].toLowerCase();
@@ -236,41 +250,59 @@ class LblReader extends HTMLElement {
       langVoices = voices.filter(v => v.lang.split(/[-_]/)[0].toLowerCase() === langPrefix);
     }
 
-    if (langVoices.length === 0 || this._isMobile()) {
-      voiceSelect.style.display = 'none';
+    if (langVoices.length === 0) {
+      voiceBtn.style.display = 'none';
       return;
     }
 
-    voiceSelect.style.display = 'block';
+    voiceBtn.style.display = 'flex';
 
-    // Save current selection if any
-    const currentVal = voiceSelect.value || this.selectedVoiceName;
-
-    voiceSelect.innerHTML = '';
-
-    // Always add "Best Voice" as first option (it's the dynamic default)
+    voiceList.innerHTML = '';
     const bestVoice = this._getBestVoice(langOrg);
+
+    // If no voice is selected yet, use best voice
+    if (!this.selectedVoiceName && bestVoice) {
+      this.selectedVoiceName = bestVoice.name;
+    }
 
     langVoices.sort((a, b) => a.name.localeCompare(b.name));
 
     langVoices.forEach(voice => {
-      const option = document.createElement('option');
-      option.value = voice.name;
-      option.textContent = voice.name;
-      if (bestVoice && voice.name === bestVoice.name) {
-        option.textContent += ' (Best)';
+      const btn = document.createElement('button');
+      btn.classList.add('voice-option-btn');
+      if (this.selectedVoiceName === voice.name) {
+        btn.classList.add('active');
       }
-      voiceSelect.appendChild(option);
-    });
 
-    // Restore selection or default to best voice
-    if (currentVal && langVoices.some(v => v.name === currentVal)) {
-      voiceSelect.value = currentVal;
-      this.selectedVoiceName = currentVal;
-    } else if (bestVoice) {
-      voiceSelect.value = bestVoice.name;
-      this.selectedVoiceName = bestVoice.name;
-    }
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = voice.name;
+      btn.appendChild(nameSpan);
+
+      if (bestVoice && voice.name === bestVoice.name) {
+        const badge = document.createElement('span');
+        badge.classList.add('badge');
+        badge.textContent = 'Best';
+        btn.appendChild(badge);
+      }
+
+      btn.onclick = () => {
+        this.selectedVoiceName = voice.name;
+        this._updateVoiceList();
+        this._hideVoiceOverlay();
+      };
+
+      voiceList.appendChild(btn);
+    });
+  }
+
+  _showVoiceOverlay() {
+    const overlay = this.shadowRoot.querySelector('.voice-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  _hideVoiceOverlay() {
+    const overlay = this.shadowRoot.querySelector('.voice-overlay');
+    if (overlay) overlay.style.display = 'none';
   }
 
   _speak(text, lang, onEnd = null) {
@@ -587,9 +619,11 @@ class LblReader extends HTMLElement {
   handleSelection(cardIndex, selectedIndex, correctIndex, button, card) {
     if (card.classList.contains('answered')) return;
 
-    if (selectedIndex === correctIndex) {
+    const isCorrect = selectedIndex === correctIndex;
+    if (isCorrect) {
       card.classList.add('answered');
       this.answeredCount++;
+      this.completedIndices.add(cardIndex); // Add this line
 
       if (!card.dataset.hadError) {
         this.score++;
@@ -1001,6 +1035,9 @@ class LblReader extends HTMLElement {
     const formOverlay = this.shadowRoot.querySelector('.form-overlay');
     formOverlay.style.display = 'flex';
 
+    const stickyBar = this.shadowRoot.querySelector('.sticky-bar');
+    if (stickyBar) stickyBar.style.display = 'none';
+
     const nicknameInput = this.shadowRoot.querySelector('#nickname');
     const numberInput = this.shadowRoot.querySelector('#student-number');
 
@@ -1108,18 +1145,24 @@ class LblReader extends HTMLElement {
       this.shadowRoot.querySelector('.report-area').innerHTML = '';
       this.shadowRoot.querySelector('.form-container').style.display = 'block';
 
-      // Persist recordings on "Try Again" as requested by user
+      const stickyBar = this.shadowRoot.querySelector('.sticky-bar');
+      if (stickyBar) stickyBar.style.display = 'flex';
+
+      // Persist recordings and correct answers on "Try Again"
       const currentRecordedBlobs = new Map(this.recordedBlobs);
       const currentRecordedSentences = new Set(this.recordedSentences);
+      const currentCompletedIndices = new Set(this.completedIndices);
 
       this.loadData(); // Re-shuffles and resets cards
 
-      // Restore the recordings after loadData
+      // Restore the state after loadData
       this.recordedBlobs = currentRecordedBlobs;
       this.recordedSentences = currentRecordedSentences;
+      this.completedIndices = currentCompletedIndices;
 
       // Re-render the line buttons to show the recording playback buttons in the story view
       this.data.forEach((_, idx) => this.renderLineButtons(idx));
+      this.updateProgress();
     };
   }
 
@@ -1949,26 +1992,92 @@ class LblReader extends HTMLElement {
           }
         }
 
-        #voice-select {
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          padding: 4px 8px;
-          font-size: 0.85em;
+        .voice-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(15, 23, 42, 0.7);
+          backdrop-filter: blur(4px);
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
+        }
+
+        .voice-card {
+          background: white;
+          width: 90%;
+          max-width: 400px;
+          max-height: 80vh;
+          border-radius: 1.2em;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .voice-card-header {
+          padding: 1.25em;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .voice-card-header h3 {
+          margin: 0;
+          font-size: 1.1em;
           color: #1e293b;
-          max-width: 150px;
-          outline: none;
+        }
+
+        .close-voice-btn {
+          background: none;
+          border: none;
+          padding: 0.5em;
+          color: #94a3b8;
           cursor: pointer;
         }
 
-        #voice-select:hover {
-          border-color: #94a3b8;
+        .voice-list {
+          padding: 1em;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5em;
         }
 
-        @media (max-width: 600px) {
-          #voice-select {
-            max-width: 100px;
-          }
+        .voice-option-btn {
+          width: 100%;
+          text-align: left !important;
+          padding: 0.8em 1em !important;
+          border: 1px solid #f1f5f9 !important;
+          background: #f8fafc !important;
+          border-radius: 0.6em !important;
+          font-size: 0.9em !important;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: all 0.2s;
+          color: #475569 !important;
+        }
+
+        .voice-option-btn:hover {
+          background: #f1f5f9 !important;
+          border-color: #e2e8f0 !important;
+        }
+
+        .voice-option-btn.active {
+          background: #eff6ff !important;
+          border-color: #3b82f6 !important;
+          color: #2563eb !important;
+          font-weight: 600 !important;
+        }
+
+        .voice-option-btn .badge {
+          font-size: 0.75em;
+          background: #dcfce7;
+          color: #166534;
+          padding: 0.2em 0.5em;
+          border-radius: 1em;
         }
       </style>
       <div class="sticky-bar">
@@ -1991,7 +2100,9 @@ class LblReader extends HTMLElement {
           <button class="control-btn" id="swap-btn" title="Swap Languages">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
           </button>
-          <select id="voice-select" title="Choose Voice" style="display: none;"></select>
+          <button class="control-btn" id="voice-btn" title="Choose Voice">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 13c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0-6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 8c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm-6 4c.22-.72 3.31-2 6-2 2.7 0 5.77 1.29 6 2H3zM15.08 7.05c.84 1.18.84 2.71 0 3.89l1.68 1.69c2.02-2.02 2.02-5.17 0-7.27l-1.68 1.69zM18.42 3.7l-1.7 1.71c2.3 2 2.3 5.6 0 7.6l1.7 1.71c3.28-3.23 3.28-8.15 0-11.02z"/></svg>
+          </button>
         </div>
         <div class="progress-text">0 / 0</div>
       </div>
@@ -2015,16 +2126,27 @@ class LblReader extends HTMLElement {
           <button class="close-prompt" onclick="this.parentElement.parentElement.style.display='none'">Continue anyway</button>
         </div>
       </div>
+      <div class="voice-overlay">
+        <div class="voice-card">
+          <div class="voice-card-header">
+            <h3>Choose Voice</h3>
+            <button class="close-voice-btn">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+          </div>
+          <div class="voice-list"></div>
+        </div>
+      </div>
     `;
 
     this.shadowRoot.querySelector('.generate-btn').onclick = () => this.generateReport();
     this.shadowRoot.querySelector('#play-pause-btn').onclick = () => this.toggleFullPlayback();
     this.shadowRoot.querySelector('#stop-btn').onclick = () => this.stopFullPlayback();
     this.shadowRoot.querySelector('#swap-btn').onclick = () => this.swapLanguages();
-
-    const voiceSelect = this.shadowRoot.querySelector('#voice-select');
-    voiceSelect.onchange = (e) => {
-      this.selectedVoiceName = e.target.value;
+    this.shadowRoot.querySelector('#voice-btn').onclick = () => this._showVoiceOverlay();
+    this.shadowRoot.querySelector('.close-voice-btn').onclick = () => this._hideVoiceOverlay();
+    this.shadowRoot.querySelector('.voice-overlay').onclick = (e) => {
+      if (e.target.classList.contains('voice-overlay')) this._hideVoiceOverlay();
     };
 
     // Initial population
