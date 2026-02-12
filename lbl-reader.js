@@ -98,11 +98,9 @@ class LblReader extends HTMLElement {
           };
         });
         this.displayAllLines();
-        this.unscrambleData = [];
-        this.currentUnscrambleIndex = 0;
-        this.unscrambleScore = 0;
-        this.userUnscrambledWords = [];
         this.matchingGamesCompleted = 0;
+        this.startUnscrambleActivity();
+        this.startMemoryGame();
         this.updateProgress();
       }
     } catch (e) {
@@ -137,8 +135,6 @@ class LblReader extends HTMLElement {
         const span = document.createElement('span');
         span.textContent = word + ' ';
         span.classList.add('tts-word');
-        // Only highlight if NOT swapped
-        // Only highlight if NOT swapped
         if (!this.isSwapped && wIdx >= lineData.highlightIndex && wIdx <= lineData.highlightIndexEnd) {
           span.classList.add('highlight');
         }
@@ -156,13 +152,10 @@ class LblReader extends HTMLElement {
 
       const fullTranslation = document.createElement('div');
       fullTranslation.classList.add('full-translation');
-      // Render translation using spans so it can be highlighted when swapped
       lineData.fullTranslation.split(' ').forEach((word, wIdx) => {
         const span = document.createElement('span');
         span.textContent = word + ' ';
         span.classList.add('tts-word');
-        // Only highlight if IS swapped
-        // Only highlight if IS swapped
         if (this.isSwapped && wIdx >= lineData.highlightIndex && wIdx <= lineData.highlightIndexEnd) {
           span.classList.add('highlight');
         }
@@ -198,15 +191,6 @@ class LblReader extends HTMLElement {
       card.appendChild(translationOptions);
       container.appendChild(card);
     });
-
-    const finishBtnContainer = document.createElement('div');
-    finishBtnContainer.classList.add('finish-container');
-    const finishBtn = document.createElement('button');
-    finishBtn.textContent = 'Continue to Activity';
-    finishBtn.classList.add('finish-btn');
-    finishBtn.onclick = () => this.startUnscrambleActivity();
-    finishBtnContainer.appendChild(finishBtn);
-    container.appendChild(finishBtnContainer);
 
     this.updateProgress();
   }
@@ -704,6 +688,11 @@ class LblReader extends HTMLElement {
   }
 
   startUnscrambleActivity() {
+    this.shadowRoot.querySelector('#scramble-section').style.display = 'block';
+    this.unscrambleData = [];
+    this.currentUnscrambleIndex = 0;
+    this.unscrambleScore = 0;
+    this.userUnscrambledWords = [];
     // Filter out sentences that have been used too many times if possible
     if (!this.unscrambleUsedSentences) {
       this.unscrambleUsedSentences = new Set();
@@ -763,47 +752,9 @@ class LblReader extends HTMLElement {
     this.updateProgress();
   }
 
-  renderUnscrambleCompletion() {
-    this.unscrambleCompleted = true;
-    const container = this.shadowRoot.querySelector('.story-container');
-    container.innerHTML = '';
-
-    const completionCard = document.createElement('div');
-    completionCard.classList.add('card', 'unscramble-card', 'playing');
-
-    const title = document.createElement('h3');
-    title.textContent = "Unscramble Activity Completed!";
-    completionCard.appendChild(title);
-
-    const message = document.createElement('p');
-    message.textContent = `You've completed this round. Do you want to play again with new sentences or continue to the next game?`;
-    completionCard.appendChild(message);
-
-    const actions = document.createElement('div');
-    actions.classList.add('unscramble-actions');
-    actions.style.marginTop = "2em";
-    actions.style.flexDirection = "column";
-    actions.style.alignItems = "center";
-
-    const playAgainBtn = document.createElement('button');
-    playAgainBtn.textContent = 'Play Again (New Sentences)';
-    playAgainBtn.onclick = () => this.startUnscrambleActivity();
-    actions.appendChild(playAgainBtn);
-
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = 'Continue to Memory Game';
-    nextBtn.classList.add('finish-btn');
-    nextBtn.style.marginTop = "0.5em";
-    nextBtn.onclick = () => this.startMemoryGame();
-    actions.appendChild(nextBtn);
-
-    completionCard.appendChild(actions);
-    container.appendChild(completionCard);
-    completionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
 
   renderUnscrambleChallenge() {
-    const container = this.shadowRoot.querySelector('.story-container');
+    const container = this.shadowRoot.querySelector('.scramble-container');
     container.innerHTML = '';
 
     const challenge = this.unscrambleData[this.currentUnscrambleIndex];
@@ -812,7 +763,7 @@ class LblReader extends HTMLElement {
     unscrambleCard.classList.add('card', 'unscramble-card', 'playing');
 
     const title = document.createElement('h3');
-    title.textContent = "Unscramble the Sentence";
+    title.innerHTML = `Unscramble the Sentence <span style="font-size: 0.8em; color: #64748b; font-weight: normal; margin-left: 0.5em;">(${this.currentUnscrambleIndex + 1} / ${this.unscrambleTotal})</span>`;
     unscrambleCard.appendChild(title);
 
     const langOrg = this.getAttribute('lang-original') || 'en';
@@ -931,6 +882,7 @@ class LblReader extends HTMLElement {
   }
 
   startMemoryGame() {
+    this.shadowRoot.querySelector('#memory-section').style.display = 'block';
     this.matchingGamesCompleted++;
     this.matchedPairsCount = 0;
     this.flippedCards = [];
@@ -968,8 +920,29 @@ class LblReader extends HTMLElement {
     this.updateProgress();
   }
 
+  renderUnscrambleCompletion() {
+    const container = this.shadowRoot.querySelector('.scramble-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="card unscramble-card" style="text-align: center; border-color: #22c55e; background: #f0fdf4;">
+          <h3 style="color: #16a34a;">Unscramble Complete!</h3>
+          <p>You scored ${this.unscrambleScore} / ${this.unscrambleTotal}</p>
+          <div style="display: flex; gap: 1em; justify-content: center; margin-top: 1em;">
+            <button class="control-btn" id="scramble-again-btn">Try Again (Different Sentences)</button>
+          </div>
+        </div>
+      `;
+
+      container.querySelector('#scramble-again-btn').onclick = () => {
+        this.startUnscrambleActivity();
+      };
+    }
+
+    this.unscrambleCompleted = true;
+  }
+
   renderMemoryGameUI() {
-    const container = this.shadowRoot.querySelector('.story-container');
+    const container = this.shadowRoot.querySelector('.memory-container');
     container.innerHTML = '';
 
     const gameHeader = document.createElement('div');
@@ -1007,13 +980,11 @@ class LblReader extends HTMLElement {
     playAgainBtn.onclick = () => this.startMemoryGame();
     gameActions.appendChild(playAgainBtn);
 
-    const finishBtn = document.createElement('button');
-    finishBtn.textContent = 'Finish & See Report';
-    finishBtn.classList.add('finish-btn');
-    finishBtn.onclick = () => this.showFinalForm();
-    gameActions.appendChild(finishBtn);
-
     container.appendChild(gameActions);
+
+    const mainFinishContainer = this.shadowRoot.querySelector('.finish-container');
+    mainFinishContainer.style.display = 'block';
+    mainFinishContainer.querySelector('.finish-btn').onclick = () => this.showFinalForm();
   }
 
   handleMemoryCardFlip(cardElement, cardData) {
@@ -1124,7 +1095,11 @@ class LblReader extends HTMLElement {
         ${unscrambleTotal > 0 ? `<p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${unscrambleTotal}</p>` : ''}
         <p><strong>Matching Pairs:</strong> ${this.matchedPairsCount} / ${memoryTotal}</p>
         <p><strong>Completed On:</strong> ${timestamp}</p>
-        <button class="try-again-btn">Try Again</button>
+        
+        <div class="report-actions">
+          <button class="return-btn">Return to Story</button>
+          <button class="reset-all-btn">Reset All Progress</button>
+        </div>
       </div>
     `;
 
@@ -1167,43 +1142,33 @@ class LblReader extends HTMLElement {
       reportArea.appendChild(recordingsSection);
     }
 
-    this.shadowRoot.querySelector('.form-container').style.display = 'none';
+    this.shadowRoot.querySelector('.initial-form').style.display = 'none';
 
-    reportArea.querySelector('.try-again-btn').onclick = () => {
-      const stickyBar = this.shadowRoot.querySelector('.sticky-bar');
-      if (stickyBar) stickyBar.style.display = 'flex';
-
+    reportArea.querySelector('.return-btn').onclick = () => {
       this.shadowRoot.querySelector('.form-overlay').style.display = 'none';
-      this.shadowRoot.querySelector('.report-area').innerHTML = '';
-      this.shadowRoot.querySelector('.form-container').style.display = 'block';
+    };
 
-      // Persist recordings and correct answers on "Try Again"
-      const currentRecordedBlobs = new Map(this.recordedBlobs);
-      const currentRecordedSentences = new Set(this.recordedSentences);
-      const currentCompletedIndices = new Set(this.completedIndices);
-      const currentUnscrambleScore = this.unscrambleScore;
-      const currentMatchedPairs = this.matchedPairsCount;
-      const currentUnscrambleCompleted = this.unscrambleCompleted;
-      const currentMemoryCompleted = this.memoryCompleted;
-      const currentUnscrambleTotal = this.unscrambleTotal;
-      const currentMemoryTotal = this.memoryTotal;
+    reportArea.querySelector('.reset-all-btn').onclick = () => {
+      if (confirm('Are you sure you want to reset all progress? This will delete all your scores and recordings.')) {
+        this.completedIndices.clear();
+        this.recordedBlobs.clear();
+        this.recordedSentences.clear();
+        this.unscrambleScore = 0;
+        this.matchedPairsCount = 0;
+        this.unscrambleCompleted = false;
+        this.memoryCompleted = false;
+        this.score = 0;
+        this.answeredCount = 0;
 
-      this.loadData(); // Re-shuffles and resets cards
+        // Reset activities
+        this.unscrambleUsedSentences?.clear();
 
-      // Restore the state after loadData
-      this.recordedBlobs = currentRecordedBlobs;
-      this.recordedSentences = currentRecordedSentences;
-      this.completedIndices = currentCompletedIndices;
-      this.unscrambleScore = currentUnscrambleScore;
-      this.matchedPairsCount = currentMatchedPairs;
-      this.unscrambleCompleted = currentUnscrambleCompleted;
-      this.memoryCompleted = currentMemoryCompleted;
-      this.unscrambleTotal = currentUnscrambleTotal;
-      this.memoryTotal = currentMemoryTotal;
+        this.shadowRoot.querySelector('.form-overlay').style.display = 'none';
+        this.shadowRoot.querySelector('.report-area').innerHTML = '';
+        this.shadowRoot.querySelector('.initial-form').style.display = 'block';
 
-      // Re-render the line buttons to show the recording playback buttons in the story view
-      this.data.forEach((_, idx) => this.renderLineButtons(idx));
-      this.updateProgress();
+        this.loadData();
+      }
     };
   }
 
@@ -1779,6 +1744,113 @@ class LblReader extends HTMLElement {
           text-decoration: underline;
         }
 
+        /* Combined Container Styles */
+        .activities-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 3em;
+          padding: 1em;
+          padding-bottom: 10em;
+        }
+
+        .section-divider {
+          border: none;
+          border-top: 2px dashed #e2e8f0;
+          margin: 2em 0;
+          position: relative;
+        }
+
+        .section-divider::after {
+          content: attr(data-label);
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 0 1em;
+          color: #94a3b8;
+          font-weight: 600;
+          font-size: 0.9em;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+
+        /* Modal Styles */
+        .form-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(15, 23, 42, 0.8);
+          backdrop-filter: blur(8px);
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .form-container {
+          background: white;
+          width: 90%;
+          max-width: 450px;
+          padding: 2.5em;
+          border-radius: 1.5em;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          text-align: center;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        .report-area {
+          width: 100%;
+        }
+
+        .report-card {
+          text-align: left;
+        }
+
+        .report-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.8em;
+          margin-top: 2em;
+        }
+
+        .return-btn {
+          background: #22c55e;
+          color: white;
+          border: none;
+          width: 100%;
+          padding: 1em;
+          font-weight: 600;
+          border-radius: 0.5em;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .return-btn:hover {
+          background: #16a34a;
+        }
+
+        .reset-all-btn {
+          background: #ef4444;
+          color: white;
+          border: none;
+          width: 100%;
+          padding: 1em;
+          font-weight: 600;
+          border-radius: 0.5em;
+          cursor: pointer;
+          transition: background 0.2s;
+          margin-top: 1em;
+          font-size: 0.85em;
+          opacity: 0.9;
+        }
+
+        .reset-all-btn:hover {
+          background: #dc2626;
+          opacity: 1;
+        }
+
         .unscramble-card {
           max-width: 600px;
           margin-left: auto;
@@ -2147,16 +2219,37 @@ class LblReader extends HTMLElement {
         </div>
         <div class="progress-text">0 / 0</div>
       </div>
-      <div class="story-container"></div>
+      <div class="activities-wrapper">
+        <div id="reading-section">
+          <div class="story-container"></div>
+        </div>
+        
+        <div id="scramble-section">
+          <hr class="section-divider" data-label="Unscramble">
+          <div class="scramble-container"></div>
+        </div>
+
+        <div id="memory-section">
+          <hr class="section-divider" data-label="Memory Game">
+          <div class="memory-container"></div>
+        </div>
+
+        <div class="finish-container">
+          <button class="finish-btn">Finish & See Report</button>
+        </div>
+      </div>
+
       <div class="form-overlay">
         <div class="form-container">
-          <h2>Great Job!</h2>
-          <p>Please enter your details to generate your report card.</p>
-          <input type="text" id="nickname" placeholder="Your Nickname">
-          <input type="text" id="student-number" placeholder="Student Number">
-          <button class="generate-btn">Generate Report Card</button>
+          <div class="initial-form">
+            <h2>Great Job!</h2>
+            <p>Please enter your details to generate your report card.</p>
+            <input type="text" id="nickname" placeholder="Your Nickname">
+            <input type="text" id="student-number" placeholder="Student Number">
+            <button class="generate-btn">Generate Report Card</button>
+          </div>
+          <div class="report-area"></div>
         </div>
-        <div class="report-area"></div>
       </div>
 
       <div class="browser-prompt-overlay">
