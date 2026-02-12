@@ -1042,6 +1042,13 @@ class LblReader extends HTMLElement {
       nicknameInput.disabled = true;
       numberInput.value = this.studentInfo.number;
       numberInput.disabled = true;
+
+      // Fix: Automatically regenerate report with latest scores
+      this.generateReport();
+    } else {
+      // Ensure initial form is shown if no student info yet
+      this.shadowRoot.querySelector('.initial-form').style.display = 'block';
+      this.shadowRoot.querySelector('.report-area').innerHTML = '';
     }
   }
 
