@@ -99,8 +99,8 @@ class LblReader extends HTMLElement {
         });
         this.displayAllLines();
         this.matchingGamesCompleted = 0;
-        this.startUnscrambleActivity();
-        this.startMemoryGame();
+        this.startUnscrambleActivity(false);
+        this.startMemoryGame(false);
         this.updateProgress();
       }
     } catch (e) {
@@ -302,7 +302,12 @@ class LblReader extends HTMLElement {
     const utterance = new SpeechSynthesisUtterance(text);
 
     let voiceToUse = null;
-    if (this.selectedVoiceName) {
+    const langOrg = this.getAttribute('lang-original') || 'en';
+    const langPrefix = lang.split(/[-_]/)[0].toLowerCase();
+    const orgPrefix = langOrg.split(/[-_]/)[0].toLowerCase();
+
+    // Only use selectedVoiceName if it's for the current original language
+    if (this.selectedVoiceName && langPrefix === orgPrefix) {
       const voices = window.speechSynthesis.getVoices();
       voiceToUse = voices.find(v => v.name === this.selectedVoiceName);
     }
@@ -675,19 +680,12 @@ class LblReader extends HTMLElement {
   updateProgress() {
     const progressText = this.shadowRoot.querySelector('.progress-text');
     if (progressText) {
-      if (this.unscrambleData && this.unscrambleData.length > 0 && this.currentUnscrambleIndex < this.unscrambleData.length) {
-        // Just show numbers as requested: 1 / 5
-        progressText.textContent = `${this.currentUnscrambleIndex + 1} / ${this.unscrambleData.length}`;
-      } else if (this.memoryGameData && this.memoryGameData.length > 0 && this.matchedPairsCount < (this.memoryGameData.length / 2)) {
-        // Just show numbers as requested: 0 / 6
-        progressText.textContent = `${this.matchedPairsCount} / ${this.memoryGameData.length / 2}`;
-      } else {
-        progressText.textContent = `${this.score} / ${this.data.length}`;
-      }
+      // Consistently show story progress (lines read)
+      progressText.textContent = `${this.score} / ${this.data.length}`;
     }
   }
 
-  startUnscrambleActivity() {
+  startUnscrambleActivity(shouldScroll = true) {
     this.shadowRoot.querySelector('#scramble-section').style.display = 'block';
     this.unscrambleData = [];
     this.currentUnscrambleIndex = 0;
@@ -748,12 +746,12 @@ class LblReader extends HTMLElement {
       return;
     }
 
-    this.renderUnscrambleChallenge();
+    this.renderUnscrambleChallenge(shouldScroll);
     this.updateProgress();
   }
 
 
-  renderUnscrambleChallenge() {
+  renderUnscrambleChallenge(shouldScroll = true) {
     const container = this.shadowRoot.querySelector('.scramble-container');
     container.innerHTML = '';
 
@@ -780,14 +778,17 @@ class LblReader extends HTMLElement {
     translation.classList.add('full-translation');
     translation.style.fontSize = "1.2em";
     translation.textContent = challenge.fullTranslation;
+    translation.setAttribute('lang', this.getAttribute('lang-translation') || 'th');
     unscrambleCard.appendChild(translation);
 
     const resultArea = document.createElement('div');
     resultArea.classList.add('unscramble-result');
+    resultArea.setAttribute('lang', langOrg);
     unscrambleCard.appendChild(resultArea);
 
     const poolArea = document.createElement('div');
     poolArea.classList.add('unscramble-pool');
+    poolArea.setAttribute('lang', langOrg);
     unscrambleCard.appendChild(poolArea);
 
     const updateUI = () => {
@@ -878,10 +879,12 @@ class LblReader extends HTMLElement {
     unscrambleCard.appendChild(actions);
 
     container.appendChild(unscrambleCard);
-    unscrambleCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (shouldScroll) {
+      unscrambleCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 
-  startMemoryGame() {
+  startMemoryGame(shouldScroll = true) {
     this.shadowRoot.querySelector('#memory-section').style.display = 'block';
     this.matchingGamesCompleted++;
     this.matchedPairsCount = 0;
@@ -963,7 +966,7 @@ class LblReader extends HTMLElement {
       card.innerHTML = `
         <div class="memory-card-inner">
           <div class="memory-card-front">?</div>
-          <div class="memory-card-back">${cardData.text}</div>
+          <div class="memory-card-back" lang="${cardData.lang}">${cardData.text}</div>
         </div>
       `;
       card.onclick = () => this.handleMemoryCardFlip(card, cardData);
@@ -1153,6 +1156,8 @@ class LblReader extends HTMLElement {
 
     reportArea.querySelector('.return-btn').onclick = () => {
       this.shadowRoot.querySelector('.form-overlay').style.display = 'none';
+      const stickyBar = this.shadowRoot.querySelector('.sticky-bar');
+      if (stickyBar) stickyBar.style.display = 'flex';
     };
 
     reportArea.querySelector('.reset-all-btn').onclick = () => {
@@ -1186,6 +1191,8 @@ class LblReader extends HTMLElement {
     this.setAttribute('lang-original', oldTrans);
     this.setAttribute('lang-translation', oldOrg);
     this.isSwapped = !this.isSwapped;
+    this.selectedVoiceName = null;
+    this._updateVoiceList();
 
     this.data = this.data.map(item => {
       const newOriginal = item.fullTranslation;
