@@ -244,6 +244,7 @@ class TjInfoGap extends HTMLElement {
     `;
 
         this.shadowRoot.innerHTML = html;
+        this.scrollIntoView({ behavior: 'smooth', block: 'start' });
         this.shadowRoot.getElementById('restart-btn').addEventListener('click', () => {
             this.score = 0;
             this.answeredCount = 0;
