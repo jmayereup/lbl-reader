@@ -180,7 +180,7 @@ class TjInfoGap extends HTMLElement {
             </div>
         </div>
         
-        <div class="section-title">Your Information (Read to others)</div>
+        <div class="section-title">Your Information</div>
         ${myTextsHtml || '<p class="empty-state">You have no texts to read. Listen to your partners.</p>'}
         
         <div class="section-title">Your Questions (Ask others)</div>
