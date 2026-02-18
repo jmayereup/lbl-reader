@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation | TJ Components</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #22d3ee;
+            --primary-hover: #06b6d4;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --code-bg: #0b1120;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-top: 0;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 { font-size: 1.5rem; color: var(--primary); margin-top: 3rem; }
+
+        p { margin-bottom: 1rem; color: var(--text-main); }
+
+        ul { margin-bottom: 1.5rem; padding-left: 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        code {
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 4rem;
+            border-radius: 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            transition: transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            transform: translateX(-5px);
+        }
+
+        .back-link svg {
+            margin-right: 0.5rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .feature-item h4 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 4rem 0;
+        }
+
+        @media (max-width: 640px) {
+            .container { padding: 2rem; }
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="index.html" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Back to Home
+        </a>
+
+        <h1>Documentation</h1>
+        <p>A collection of premium, interactive web components for language learning, designed to be easily embedded into blogs or websites.</p>
+
+        <section id="cdn">
+            <h2>CDN & Quick Start</h2>
+            <p>Paste these script tags into your site's header or footer to enable all components:</p>
+            <pre><code>&lt;!-- Components --&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/lbl-reader.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/grammar-hearts.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/tj-info-gap.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/tj-listening.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/speed-review.js" defer&gt;&lt;/script&gt;
+
+&lt;!-- Required Fonts --&gt;
+&lt;link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"&gt;</code></pre>
+        </section>
+
+        <section id="features">
+            <h2>Global Features</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>📄 Report Cards</h4>
+                    <p>Students enter a nickname and student number to generate a modal report card for assessment.</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🎧 Unified Voices</h4>
+                    <p>Consistent icon-based voice selection overlay with automatic "Best" voice detection.</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔗 Share as Quiz</h4>
+                    <p>Append <code>?quiz=1</code> to the URL to hide transcripts and enable assessment mode.</p>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <section id="components">
+            <h2>Components</h2>
+
+            <!-- LBL Reader -->
+            <h3>1. LBL Reader (&lt;lbl-reader&gt;)</h3>
+            <p>An interactive story reader with word highlighting, Text-to-Speech, and automatic matching activities.</p>
+            <pre><code>&lt;lbl-reader 
+  lang-original="en" 
+  lang-translation="th" 
+  story-title="My Daily Routine"&gt;
+[
+  {
+    "original": "I wake up at 7 AM every day.",
+    "fullTranslation": "ฉันตื่นนอนตอน 7 โมงเช้าทุกวัน",
+    "translationOptions": ["ตื่นนอน", "นอนหลับ", "แปรงฟัน"],
+    "correctTranslationIndex": 0,
+    "highlightIndex": 1
+  }
+]
+&lt;/lbl-reader&gt;</code></pre>
+
+            <!-- Grammar Hearts -->
+            <h3>2. Grammar Hearts (&lt;grammar-hearts&gt;)</h3>
+            <p>A gamified grammar practice component with lives, multiple-choice, and sentence scrambling.</p>
+            <pre><code>&lt;grammar-hearts hearts="3" round-size="10"&gt;
+{
+  "title": "Daily Routines Quiz",
+  "questions": [
+    {
+      "type": "multiple-choice",
+      "question": "She ___ (work) every day.",
+      "options": ["works", "is working"],
+      "correctIndex": 0
+    }
+  ]
+}
+&lt;/grammar-hearts&gt;</code></pre>
+
+            <!-- Info Gap -->
+            <h3>3. Info Gap (&lt;tj-info-gap&gt;)</h3>
+            <p>Collaborative multi-player activity for communication practice or single-player mode with TTS partner.</p>
+            <pre><code>&lt;tj-info-gap&gt;
+{
+  "topic": "Ordering Delivery",
+  "blocks": [
+    {
+      "text_holder_id": 1,
+      "text": "Wanchai wants pad thai.",
+      "questions": [
+        { "asker_id": 2, "question": "What does he want?", "options": ["Pad Thai", "Rice"], "correct_answer": "Pad Thai" }
+      ]
+    }
+  ]
+}
+&lt;/tj-info-gap&gt;</code></pre>
+
+            <!-- Listening -->
+            <h3>4. Listening (&lt;tj-listening&gt;)</h3>
+            <p>Comprehensive listening lesson with vocabulary preview, dialogue playback, and comprehension quiz.</p>
+            <pre><code>&lt;tj-listening 
+  audio-intro="url_to_mp3" 
+  audio-listening="url_to_mp3"&gt;
+{
+  "title": "Ordering Food",
+  "lang": "en-US",
+  "vocab": [
+    { "word": "bill", "definition": "Charges for food.", "example": "Bill please." }
+  ],
+  "listening": {
+    "transcript": "Waiter: Hello...",
+    "questions": [
+      { "question": "What did they order?", "options": ["Food", "Drink"], "correct": "Food" }
+    ]
+  }
+}
+&lt;/tj-listening&gt;</code></pre>
+
+            <!-- Speed Review -->
+            <h3>5. Speed Review (&lt;tj-speed-review&gt;)</h3>
+            <p>Fast-paced review activity with a countdown timer. Points awarded based on speed.</p>
+            <pre><code>&lt;tj-speed-review time-limit="15" round-size="10"&gt;
+[
+  {
+    "title": "Topic Title",
+    "questions": [
+      {
+        "question": "The question text...",
+        "options": ["Choice A", "Choice B"],
+        "answer": "Choice A"
+      }
+    ]
+  }
+]
+&lt;/tj-speed-review&gt;</code></pre>
+        </section>
+
+        <section id="blog-embedding">
+            <h2>How to use in a Blog</h2>
+            <ul>
+                <li><strong>Add Script Tags</strong>: Add the CDN script tags directly to your blog post (Custom HTML block).</li>
+                <li><strong>Embed Component</strong>: Paste the component tag and your JSON data directly into the post.</li>
+                <li><strong>Fonts</strong>: Ensure the Google Fonts link is included in your theme or post.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 TJ Components. All rights reserved.</p>
+        </footer>
+    </div>
+
+</body>
+</html>

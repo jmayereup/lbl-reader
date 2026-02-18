@@ -1,122 +1,6 @@
-# LBL Reader & Grammar Hearts
+# TJ Components
 
-A collection of interactive web components for language learning, designed to be easily embedded into blogs or websites.
-
-## Components
-
-### 1. LBL Reader (`<lbl-reader>`)
-An interactive story reader that highlights words, provides text-to-speech, and includes vocabulary and memory activities.
-
-#### Usage
-```html
-<script src="path/to/lbl-reader.js" defer></script>
-
-<lbl-reader 
-  lang-original="en" 
-  lang-translation="th" 
-  story-title="My Daily Routine">
-[
-  {
-    "original": "I wake up at 7 AM every day.",
-    "fullTranslation": "ฉันตื่นนอนตอน 7 โมงเช้าทุกวัน",
-    "translationOptions": ["ตื่นนอน", "นอนหลับ", "แปรงฟัน"],
-    "correctTranslationIndex": 0,
-    "highlightIndex": 1
-  },
-  {
-    "original": "Then I drink a cup of coffee.",
-    "fullTranslation": "หลังจากนั้นฉันดื่มกาแฟหนึ่งถ้วย",
-    "translationOptions": ["ดื่ม", "กิน", "ทำ"],
-    "correctTranslationIndex": 0,
-    "highlightIndex": 2
-  }
-]
-</lbl-reader>
-```
-
-#### Attributes
-- `lang-original`: The language code for the story (e.g., "en", "es").
-- `lang-translation`: The language code for translations (e.g., "th", "fr").
-- `story-title`: The title shown in reports.
-- `lesson-id`: (Optional) Used for deep linking in mobile browsers.
-
----
-
-### 2. Grammar Hearts (`<grammar-hearts>`)
-A gamified grammar practice component with multiple-choice, fill-in-the-blank, and sentence scrambling activities.
-
-#### Usage
-```html
-<script src="path/to/grammar-hearts.js" defer></script>
-
-<grammar-hearts hearts="3" round-size="10">
-[
-{
-  "title": "Daily Routines Quiz",
-  "hint": {
-    "summary": "Present Simple vs Present Continuous",
-    "content": "Use **Present Simple** for habits. Use **Present Continuous** for actions happening now."
-  },
-  "questions": [
-    {
-      "type": "multiple-choice",
-      "instruction": "Choose the correct form:",
-      "question": "She ___ (work) every day.",
-      "options": ["works", "is working", "work"],
-      "correctIndex": 0,
-      "explanation": "We use **Present Simple** for habits."
-    },
-    {
-      "type": "fill-in-the-blank",
-      "instruction": "Fill in the blank:",
-      "question": "I ___ to school right now.",
-      "answer": ["am walking", "'m walking"],
-      "explanation": "Action happening **right now**. Both full and contracted forms are accepted."
-    },
-    {
-      "type": "scramble",
-      "instruction": "Unscramble the sentence:",
-      "sentence": "They are playing football now.",
-      "explanation": "Subject + are + verb-ing."
-    }
-  ]
-}
-]
-</grammar-hearts>
-```
-
-#### Attributes
-- `hearts`: Number of lives before game over (default: 3).
-- `round-size`: Number of questions per round (default: 5).
-
-> [!TIP]
-> **Multiple Answers**: For `fill-in-the-blank` questions, you can provide an array of strings for the `answer` field (e.g., `["is not", "isn't"]`) to accept multiple correct forms. It is backward compatible with single strings.
-
-### Speed Review (`tj-speed-review`)
-
-A fast-paced review activity with a countdown timer. Points are awarded based on how quickly the student answers.
-
-**Attributes:**
-- `time-limit`: Seconds per question (default: `15`).
-- `round-size`: Number of questions to pick from the pool (default: `10`).
-
-**JSON Schema:**
-```json
-[
-  {
-    "title": "Topic Title",
-    "questions": [
-      {
-        "category": "Optional Label",
-        "question": "The question text...",
-        "options": ["Choice A", "Choice B", "Choice C"],
-        "answer": "Choice A",
-        "explanation": "Markdown **feedback**..."
-      }
-    ]
-  }
-]
-```
+A collection of premium, interactive web components for language learning, designed to be easily embedded into blogs or websites.
 
 ## CDN & Quick Start
 
@@ -134,8 +18,131 @@ You can use these components directly without downloading them by linking to the
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 ```
 
+## Global Features
+
+### 📄 Report Cards
+Most components now include a "Report Card" feature. Students are prompted for their nickname and student number, generating a modal report card that they can screenshot and send to their teacher.
+
+### 🎧 Unified Voice Selection
+A consistent, icon-based voice selection overlay is available on components with Text-to-Speech. It automatically suggests the "Best" available voice for the target language while allowing students to choose alternatives.
+
+### 🔗 Share as Quiz
+By appending `?quiz=1` to the URL, components like `tj-listening` will hide transcripts and other "help" elements, turning the activity into a pure assessment mode.
+
+---
+
+## Components
+
+### 1. LBL Reader (`<lbl-reader>`)
+An interactive story reader with word highlighting, TTS, and automatic memory matching activities.
+
+#### Usage
+```html
+<lbl-reader lang-original="en" lang-translation="th" story-title="My Daily Routine">
+[
+  {
+    "original": "I wake up at 7 AM every day.",
+    "fullTranslation": "ฉันตื่นนอนตอน 7 โมงเช้าทุกวัน",
+    "translationOptions": ["ตื่นนอน", "นอนหลับ", "แปรงฟัน"],
+    "correctTranslationIndex": 0,
+    "highlightIndex": 1
+  }
+]
+</lbl-reader>
+```
+
+---
+
+### 2. Grammar Hearts (`<grammar-hearts>`)
+A gamified grammar practice component with multiple-choice, fill-in-the-blank, and sentence scrambling.
+
+#### Usage
+```html
+<grammar-hearts hearts="3" round-size="10">
+{
+  "title": "Daily Routines Quiz",
+  "hint": {
+    "summary": "Present Simple vs Continuous",
+    "content": "Use **Present Simple** for habits."
+  },
+  "questions": [
+    {
+      "type": "multiple-choice",
+      "question": "She ___ (work) every day.",
+      "options": ["works", "is working"],
+      "correctIndex": 0
+    }
+  ]
+}
+</grammar-hearts>
+```
+
+---
+
+### 3. Info Gap (`<tj-info-gap>`)
+A communication-focused component for paired or single-player practice.
+
+#### Attributes
+- `player_count`: (Optional) Defaults to 2.
+
+#### JSON Example
+```json
+{
+  "topic": "Ordering Delivery",
+  "scenario_description": "Ask your partner the questions.",
+  "player_count": 2,
+  "blocks": [
+    {
+      "text_holder_id": 1,
+      "text": "Wanchai wants pad thai.",
+      "questions": [
+        { "asker_id": 2, "question": "What does he want?", "options": ["Pad Thai", "Rice"], "correct_answer": "Pad Thai" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### 4. Listening (`<tj-listening>`)
+A comprehensive listening lesson including vocabulary preview, dialogue playback, and comprehension quiz.
+
+#### Attributes
+- `audio-intro`: (Optional) URL to an MP3 for the introduction.
+- `audio-listening`: (Optional) URL to an MP3 for the main dialogue.
+
+#### JSON Example
+```json
+{
+  "title": "Ordering Food",
+  "lang": "en-US",
+  "intro": { "text": "Listen to the waiter..." },
+  "vocab": [
+    { "word": "bill", "definition": "Charges for food.", "example": "Bill please." }
+  ],
+  "listening": {
+    "transcript": "Waiter: Hello...",
+    "questions": [
+      { "question": "What did they order?", "options": ["Food", "Drink"], "correct": "Food" }
+    ]
+  }
+}
+```
+
+---
+
+### 5. Speed Review (`tj-speed-review`)
+A fast-paced review activity with a countdown timer.
+
+#### Attributes
+- `time-limit`: Seconds per question (default: 15).
+- `round-size`: Number of questions from pool (default: 10).
+
+---
+
 ## How to use in a Blog (WordPress, Blogger, etc.)
 
-1.  **Add the Script Tags**: Add the CDN script tags above to your blog post (using a "Custom HTML" block).
-2.  **Embed the Component**: Paste the HTML for the component and your JSON data directly into the post.
-3.  **Fonts**: Ensure the Google Fonts link is included in your post or theme header.
+1.  **Add Script Tags**: Add the CDN script tags to your blog post (Custom HTML block).
+2.  **Embed Component**: Paste the component tag and your JSON data directly into the post.
+3.  **Fonts**: Ensure the Google Fonts link is included.
