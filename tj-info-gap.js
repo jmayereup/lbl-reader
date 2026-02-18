@@ -1,4 +1,7 @@
 class TjInfoGap extends HTMLElement {
+    // Static registry of all instances on the page
+    static _instances = [];
+
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -14,9 +17,12 @@ class TjInfoGap extends HTMLElement {
         this.selectedVoiceName = null;
         this.isPlaying = false;
 
-        // Bind voices changed event
+        // Register this instance
+        TjInfoGap._instances.push(this);
+
+        // Use addEventListener so multiple instances don't clobber each other
         if (window.speechSynthesis) {
-            window.speechSynthesis.onvoiceschanged = () => this._updateVoiceList();
+            window.speechSynthesis.addEventListener('voiceschanged', () => this._updateVoiceList());
         }
 
         // Recording state
@@ -271,8 +277,57 @@ class TjInfoGap extends HTMLElement {
         }
     }
 
+    _isLastInstance() {
+        const all = TjInfoGap._instances;
+        return all.length > 1 && all[all.length - 1] === this;
+    }
+
+    _getCombinedScore() {
+        const all = TjInfoGap._instances;
+        let totalScore = 0, totalQuestions = 0, allDone = true;
+        all.forEach(inst => {
+            totalScore += inst.score;
+            totalQuestions += inst.totalQuestions;
+            if (!inst.isCompleted) allDone = false;
+        });
+        return { totalScore, totalQuestions, allDone, count: all.length };
+    }
+
     renderScoreScreen() {
         const percentage = Math.round((this.score / this.totalQuestions) * 100) || 0;
+
+        // Combined score for last instance
+        let combinedHtml = '';
+        if (this._isLastInstance()) {
+            const combined = this._getCombinedScore();
+            if (combined.allDone) {
+                const combinedPct = Math.round((combined.totalScore / combined.totalQuestions) * 100) || 0;
+                let combinedEmoji = '🏆';
+                if (combinedPct < 50) combinedEmoji = '💪';
+                else if (combinedPct < 80) combinedEmoji = '⭐';
+                combinedHtml = `
+                    <div class="combined-score">
+                        <div class="combined-header">${combinedEmoji} Combined Score — All ${combined.count} Activities</div>
+                        <div class="combined-stats">
+                            <div class="combined-value">${combined.totalScore} / ${combined.totalQuestions}</div>
+                            <div class="combined-percent">${combinedPct}%</div>
+                        </div>
+                        <div class="combined-bar-track">
+                            <div class="combined-bar-fill" style="width: ${combinedPct}%"></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const done = TjInfoGap._instances.filter(i => i.isCompleted).length;
+                combinedHtml = `
+                    <div class="combined-score combined-pending">
+                        <div class="combined-header">📋 Activity Progress</div>
+                        <p class="combined-note">${done} of ${combined.count} activities completed. Finish all to see your combined score.</p>
+                    </div>
+                `;
+            }
+        }
+
         let html = `
       <style>${this.getBaseStyles()}</style>
       <div class="container score-screen">
@@ -283,6 +338,7 @@ class TjInfoGap extends HTMLElement {
         <h2>Great job, Player ${this.currentPlayerId}!</h2>
         <p>You have completed the "${this.activityData.topic}" activity.</p>
         <button class="role-btn" id="restart-btn">Try Again / Switch Player</button>
+        ${combinedHtml}
       </div>
     `;
 
@@ -685,6 +741,17 @@ class TjInfoGap extends HTMLElement {
       .voice-option-btn:hover { background-color: #f8fafc; border-color: #cbd5e1; }
       .voice-option-btn.active { background: #eff6ff; border-color: #3b82f6; color: #2563eb; font-weight: 600; }
       .badge { background: #dcfce7; color: #166534; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+
+      /* Combined Score */
+      .combined-score { margin-top: 30px; padding: 20px 24px; background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%); border: 1px solid #bae6fd; border-radius: 12px; text-align: center; }
+      .combined-header { font-size: 1.1em; font-weight: 700; color: #0c4a6e; margin-bottom: 12px; }
+      .combined-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 12px; }
+      .combined-value { font-size: 1.8em; font-weight: 800; color: #1e293b; }
+      .combined-percent { font-size: 1.8em; font-weight: 800; color: #2563eb; }
+      .combined-bar-track { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+      .combined-bar-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #22c55e); border-radius: 5px; transition: width 0.6s ease; }
+      .combined-pending { background: #f8fafc; border-color: #e2e8f0; }
+      .combined-note { color: #64748b; font-size: 0.9em; margin: 0; }
     `;
     }
 }
