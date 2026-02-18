@@ -12,6 +12,9 @@ class TjInfoGap extends HTMLElement {
         this.totalQuestions = 0;
         this.isCompleted = false;
 
+        // Student info for report card
+        this.studentInfo = { nickname: '', number: '' };
+
         // TTS State
         this.isSinglePlayer = false;
         this.selectedVoiceName = null;
@@ -295,6 +298,9 @@ class TjInfoGap extends HTMLElement {
 
     renderScoreScreen() {
         const percentage = Math.round((this.score / this.totalQuestions) * 100) || 0;
+        let emoji = '🎉';
+        if (percentage < 50) emoji = '💪';
+        else if (percentage < 80) emoji = '👍';
 
         // Combined score for last instance
         let combinedHtml = '';
@@ -335,21 +341,161 @@ class TjInfoGap extends HTMLElement {
             <div class="score-value">${this.score}/${this.totalQuestions}</div>
             <div class="score-percent">${percentage}%</div>
         </div>
-        <h2>Great job, Player ${this.currentPlayerId}!</h2>
-        <p>You have completed the "${this.activityData.topic}" activity.</p>
-        <button class="role-btn" id="restart-btn">Try Again / Switch Player</button>
+        <h2>${emoji} ${percentage >= 80 ? 'Excellent!' : percentage >= 50 ? 'Good effort!' : 'Keep practicing!'}</h2>
+        <p>You completed the "${this.activityData.topic}" activity as Player ${this.currentPlayerId}.</p>
+        <div class="score-actions">
+            <button class="role-btn" id="restart-btn">Try Again / Switch Player</button>
+            <button class="report-btn" id="report-btn">📄 See Report Card</button>
+        </div>
         ${combinedHtml}
       </div>
-    `;
+
+      <div class="report-overlay" id="report-overlay" style="display:none;">
+        <div class="report-modal">
+          <div class="initial-form" id="initial-form">
+            <div class="report-icon">📄</div>
+            <h2>Report Card</h2>
+            <p>Enter your details to generate your report.</p>
+            <input type="text" id="nickname-input" placeholder="Your Nickname" autocomplete="off">
+            <input type="text" id="number-input" placeholder="Student Number" autocomplete="off" inputmode="numeric">
+            <button class="generate-btn" id="generate-btn">Generate Report Card</button>
+            <button class="cancel-btn" id="cancel-btn">Cancel</button>
+          </div>
+          <div class="report-area" id="report-area" style="display:none;"></div>
+        </div>
+      </div>
+`;
 
         this.shadowRoot.innerHTML = html;
         this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
         this.shadowRoot.getElementById('restart-btn').addEventListener('click', () => {
             this.score = 0;
             this.answeredCount = 0;
             this.isCompleted = false;
             this.currentPlayerId = null;
             this.render();
+        });
+
+        this.shadowRoot.getElementById('report-btn').addEventListener('click', () => {
+            this._showReportOverlay();
+        });
+
+        this.shadowRoot.getElementById('generate-btn').addEventListener('click', () => {
+            this._generateReport();
+        });
+
+        this.shadowRoot.getElementById('cancel-btn').addEventListener('click', () => {
+            this.shadowRoot.getElementById('report-overlay').style.display = 'none';
+        });
+
+        this.shadowRoot.getElementById('report-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'report-overlay') {
+                this.shadowRoot.getElementById('report-overlay').style.display = 'none';
+            }
+        });
+    }
+
+    _showReportOverlay() {
+        const overlay = this.shadowRoot.getElementById('report-overlay');
+        overlay.style.display = 'flex';
+
+        // Pre-fill if already entered
+        if (this.studentInfo.nickname) {
+            const nicknameInput = this.shadowRoot.getElementById('nickname-input');
+            const numberInput = this.shadowRoot.getElementById('number-input');
+            if (nicknameInput) nicknameInput.value = this.studentInfo.nickname;
+            if (numberInput) numberInput.value = this.studentInfo.number;
+            // Re-generate report immediately
+            this._generateReport();
+        } else {
+            // Show initial form if no info
+            const initialForm = this.shadowRoot.getElementById('initial-form');
+            const reportArea = this.shadowRoot.getElementById('report-area');
+            if (initialForm) initialForm.style.display = 'block';
+            if (reportArea) reportArea.style.display = 'none';
+        }
+    }
+
+    _generateReport() {
+        const nicknameInput = this.shadowRoot.getElementById('nickname-input');
+        const numberInput = this.shadowRoot.getElementById('number-input');
+        const nickname = nicknameInput ? nicknameInput.value.trim() : this.studentInfo.nickname;
+        const number = numberInput ? numberInput.value.trim() : this.studentInfo.number;
+
+        if (!nickname || !number) {
+            alert('Please enter both nickname and student number.');
+            return;
+        }
+
+        this.studentInfo = { nickname, number };
+
+        const percentage = Math.round((this.score / this.totalQuestions) * 100) || 0;
+        const timestamp = new Date().toLocaleString();
+        const topic = this.activityData.topic || 'Info Gap Activity';
+
+        let emoji = '🎉';
+        if (percentage < 50) emoji = '💪';
+        else if (percentage < 80) emoji = '👍';
+
+        // Combined score section
+        let combinedHtml = '';
+        if (this._isLastInstance()) {
+            const combined = this._getCombinedScore();
+            if (combined.allDone) {
+                const combinedPct = Math.round((combined.totalScore / combined.totalQuestions) * 100) || 0;
+                let combinedEmoji = '🏆';
+                if (combinedPct < 50) combinedEmoji = '💪';
+                else if (combinedPct < 80) combinedEmoji = '⭐';
+                combinedHtml = `
+                    <div class="rc-combined">
+                        <div class="rc-combined-title">${combinedEmoji} Combined Score — All ${combined.count} Activities</div>
+                        <div class="rc-combined-score">${combined.totalScore} / ${combined.totalQuestions} &nbsp; <span class="rc-combined-pct">${combinedPct}%</span></div>
+                        <div class="rc-bar-track"><div class="rc-bar-fill" style="width:${combinedPct}%"></div></div>
+                    </div>
+                `;
+            }
+        }
+
+        const reportHtml = `
+            <div class="rc-header">
+                <div class="rc-icon">📄</div>
+                <div class="rc-title">Report Card</div>
+                <div class="rc-activity">${topic}</div>
+            </div>
+            <div class="rc-student">
+                <span class="rc-label">Student</span>
+                <span class="rc-value">${nickname} <span class="rc-number">(${number})</span></span>
+            </div>
+            <div class="rc-score-row">
+                <div class="rc-score-circle">
+                    <div class="rc-score-val">${this.score}/${this.totalQuestions}</div>
+                    <div class="rc-score-pct">${percentage}%</div>
+                </div>
+                <div class="rc-score-label">${emoji} ${percentage >= 80 ? 'Excellent!' : percentage >= 50 ? 'Good effort!' : 'Keep practicing!'}</div>
+            </div>
+            <div class="rc-bar-track" style="margin: 0 0 16px 0;"><div class="rc-bar-fill" style="width:${percentage}%"></div></div>
+            <div class="rc-details">
+                <div class="rc-detail-row"><span>Player</span><span>${this.currentPlayerId}</span></div>
+                <div class="rc-detail-row"><span>Questions Answered</span><span>${this.score} / ${this.totalQuestions}</span></div>
+                <div class="rc-detail-row"><span>Completed On</span><span>${timestamp}</span></div>
+            </div>
+            ${combinedHtml}
+            <div class="rc-actions">
+                <button class="rc-close-btn" id="rc-close-btn">↩ Return to Activity</button>
+            </div>
+        `;
+
+        const initialForm = this.shadowRoot.getElementById('initial-form');
+        const reportArea = this.shadowRoot.getElementById('report-area');
+        if (initialForm) initialForm.style.display = 'none';
+        if (reportArea) {
+            reportArea.style.display = 'block';
+            reportArea.innerHTML = reportHtml;
+        }
+
+        this.shadowRoot.getElementById('rc-close-btn').addEventListener('click', () => {
+            this.shadowRoot.getElementById('report-overlay').style.display = 'none';
         });
     }
 
@@ -717,12 +863,57 @@ class TjInfoGap extends HTMLElement {
       .score-circle { width: 150px; height: 150px; border-radius: 50%; background: #f1f5f9; border: 8px solid #2563eb; margin: 0 auto 30px auto; display: flex; flex-direction: column; justify-content: center; align-items: center; }
       .score-value { font-size: 2em; font-weight: 800; color: #1e293b; }
       .score-percent { font-size: 1.2em; font-weight: 600; color: #2563eb; }
+      .score-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: 8px; }
       
       .empty-state { color: #94a3b8; font-style: italic; }
       
       .role-grid { display: flex; gap: 12px; margin-top: 15px; }
       .role-btn { flex: 1; padding: 16px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 8px; transition: all 0.2s; }
       .role-btn:hover { background-color: #e2e8f0; border-color: #94a3b8; }
+      .report-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+      .report-btn:hover { background: #1d4ed8; }
+
+      /* Report Overlay */
+      .report-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+      .report-modal { background: white; width: 92%; max-width: 420px; padding: 28px 24px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); text-align: center; max-height: 90vh; overflow-y: auto; }
+      .report-modal h2 { margin: 8px 0 4px; color: #1e293b; }
+      .report-modal p { color: #64748b; margin: 0 0 16px; font-size: 0.95em; }
+      .report-icon { font-size: 2.5em; margin-bottom: 4px; }
+      .report-modal input { display: block; width: 100%; box-sizing: border-box; padding: 12px 14px; margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1em; outline: none; transition: border-color 0.2s; }
+      .report-modal input:focus { border-color: #2563eb; }
+      .generate-btn { width: 100%; padding: 13px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-bottom: 8px; }
+      .generate-btn:hover { background: #1d4ed8; }
+      .cancel-btn { background: none; border: none; color: #94a3b8; font-size: 0.9em; cursor: pointer; text-decoration: underline; }
+
+      /* Report Card */
+      .report-area { text-align: left; }
+      .rc-header { text-align: center; margin-bottom: 16px; }
+      .rc-icon { font-size: 2em; }
+      .rc-title { font-size: 1.3em; font-weight: 800; color: #1e293b; margin: 4px 0 2px; }
+      .rc-activity { font-size: 0.9em; color: #64748b; }
+      .rc-student { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+      .rc-label { font-size: 0.8em; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+      .rc-value { font-weight: 700; color: #1e293b; }
+      .rc-number { color: #64748b; font-weight: 400; }
+      .rc-score-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+      .rc-score-circle { width: 80px; height: 80px; border-radius: 50%; background: #f1f5f9; border: 6px solid #2563eb; display: flex; flex-direction: column; justify-content: center; align-items: center; flex-shrink: 0; }
+      .rc-score-val { font-size: 1.1em; font-weight: 800; color: #1e293b; line-height: 1.1; }
+      .rc-score-pct { font-size: 0.85em; font-weight: 700; color: #2563eb; }
+      .rc-score-label { font-size: 1.1em; font-weight: 700; color: #1e293b; }
+      .rc-bar-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+      .rc-bar-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #22c55e); border-radius: 4px; transition: width 0.6s ease; }
+      .rc-details { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+      .rc-detail-row { display: flex; justify-content: space-between; padding: 9px 14px; font-size: 0.9em; border-bottom: 1px solid #f1f5f9; }
+      .rc-detail-row:last-child { border-bottom: none; }
+      .rc-detail-row span:first-child { color: #64748b; }
+      .rc-detail-row span:last-child { font-weight: 600; color: #1e293b; }
+      .rc-combined { background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%); border: 1px solid #bae6fd; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; text-align: center; }
+      .rc-combined-title { font-size: 0.95em; font-weight: 700; color: #0c4a6e; margin-bottom: 8px; }
+      .rc-combined-score { font-size: 1.4em; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+      .rc-combined-pct { color: #2563eb; }
+      .rc-actions { margin-top: 16px; }
+      .rc-close-btn { width: 100%; padding: 12px; background: #22c55e; color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+      .rc-close-btn:hover { background: #16a34a; }
 
       .single-player-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
       @media (max-width: 768px) {
