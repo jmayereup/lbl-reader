@@ -287,20 +287,38 @@
 
             <!-- Quiz Element -->
             <h3>6. Quiz Element (&lt;tj-quiz-element&gt;)</h3>
-            <p>A flexible quiz component supporting reading passages, vocabulary matching, and cloze (fill-in-the-blank) sections.</p>
+            <p>A flexible quiz component supporting reading passages, vocabulary matching, and cloze (fill-in-the-blank) sections. Optimized for Google Apps Script integration.</p>
             <pre><code>&lt;tj-quiz-element submission-url="YOUR_GAS_URL"&gt;
   My Quiz Title
   ---text
   This is a reading passage...
-  ---vocab
-  word | definition
-  ---cloze
-  The [cat] sat on the [mat].
-  ---questions
+  ---instructions
+  Choose the best answer for each question.
+  ---questions-3
   Q: What happened?
   A: Nothing
   A: Everything [correct]
+  ---vocab-5
+  Word: Definition
+  Concept: Explanation
+  ---cloze-2
+  The [cat] sat on the [mat].
 &lt;/tj-quiz-element&gt;</code></pre>
+
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>🔢 Limiters</h4>
+                    <p>Append <code>-N</code> to any section (e.g., <code>---questions-3</code>) to randomly show N items.</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📝 Instructions</h4>
+                    <p>Use <code>---instructions</code> to add custom guidance between quiz sections.</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔤 Vocab Syntax</h4>
+                    <p>Format as <code>Word: Definition</code> (one per line) for matching activities.</p>
+                </div>
+            </div>
 
             <!-- Chapter Book -->
             <h3>7. Chapter Book (&lt;tj-chapter-book&gt;)</h3>

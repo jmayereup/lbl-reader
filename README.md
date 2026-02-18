@@ -151,16 +151,24 @@ A flexible quiz component supporting reading passages, vocabulary matching, and 
   My Quiz Title
   ---text
   This is a reading passage...
-  ---vocab
-  word | definition
-  ---cloze
-  The [cat] sat on the [mat].
-  ---questions
+  ---instructions
+  Choose the best answer for each question.
+  ---questions-3
   Q: What happened?
   A: Nothing
   A: Everything [correct]
+  ---vocab-5
+  Word: Definition
+  Concept: Explanation
+  ---cloze-2
+  The [cat] sat on the [mat].
 </tj-quiz-element>
 ```
+
+#### Key Features
+- **Limiters**: Append `-N` to any section header (e.g., `---questions-3`) to display exactly N random items from that section.
+- **Instructions**: Use `---instructions` to add a header and body text between activities.
+- **Vocab Syntax**: Use `Word: Definition` (one per line) for vocabulary matching sections.
 
 ---
 
