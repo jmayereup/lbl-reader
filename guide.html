@@ -164,6 +164,8 @@
 &lt;script src="https://jmayereup.github.io/tj-components/tj-info-gap.js" defer&gt;&lt;/script&gt;
 &lt;script src="https://jmayereup.github.io/tj-components/tj-listening.js" defer&gt;&lt;/script&gt;
 &lt;script src="https://jmayereup.github.io/tj-components/speed-review.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/tj-quiz-element.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://jmayereup.github.io/tj-components/tj-chapter-book.js" defer&gt;&lt;/script&gt;
 
 &lt;!-- Required Fonts --&gt;
 &lt;link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"&gt;</code></pre>
@@ -281,7 +283,43 @@
     ]
   }
 ]
-&lt;/tj-speed-review&gt;</code></pre>
+&lt;/tj-speed-review&gt;
+
+            <!-- Quiz Element -->
+            <h3>6. Quiz Element (&lt;tj-quiz-element&gt;)</h3>
+            <p>A flexible quiz component supporting reading passages, vocabulary matching, and cloze (fill-in-the-blank) sections.</p>
+            <pre><code>&lt;tj-quiz-element submission-url="YOUR_GAS_URL"&gt;
+  My Quiz Title
+  ---text
+  This is a reading passage...
+  ---vocab
+  word | definition
+  ---cloze
+  The [cat] sat on the [mat].
+  ---questions
+  Q: What happened?
+  A: Nothing
+  A: Everything [correct]
+&lt;/tj-quiz-element&gt;</code></pre>
+
+            <!-- Chapter Book -->
+            <h3>7. Chapter Book (&lt;tj-chapter-book&gt;)</h3>
+            <p>A multi-chapter reading companion with built-in TTS, translation toggles, and comprehension checks.</p>
+            <pre><code>&lt;tj-chapter-book&gt;
+{
+  "title": "My Adventure",
+  "chapters": [
+    {
+      "title": "Chapter 1",
+      "text": "Once upon a time...",
+      "translation": "กาลครั้งหนึ่ง...",
+      "quiz": [
+        { "question": "Who was there?", "options": ["Hero", "Villain"], "answer": 0 }
+      ]
+    }
+  ]
+}
+&lt;/tj-chapter-book&gt;</code></pre>
         </section>
 
         <section id="blog-embedding">

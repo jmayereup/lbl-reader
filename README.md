@@ -13,6 +13,8 @@ You can use these components directly without downloading them by linking to the
 <script src="https://jmayereup.github.io/tj-components/tj-info-gap.js" defer></script>
 <script src="https://jmayereup.github.io/tj-components/tj-listening.js" defer></script>
 <script src="https://jmayereup.github.io/tj-components/speed-review.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/tj-quiz-element.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/tj-chapter-book.js" defer></script>
 
 <!-- Required Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -137,6 +139,52 @@ A fast-paced review activity with a countdown timer.
 #### Attributes
 - `time-limit`: Seconds per question (default: 15).
 - `round-size`: Number of questions from pool (default: 10).
+
+---
+
+### 6. Quiz Element (`<tj-quiz-element>`)
+A flexible quiz component supporting reading passages, vocabulary matching, and cloze (fill-in-the-blank) sections. Optimized for Google Apps Script integration.
+
+#### Usage
+```html
+<tj-quiz-element submission-url="YOUR_GAS_URL">
+  My Quiz Title
+  ---text
+  This is a reading passage...
+  ---vocab
+  word | definition
+  ---cloze
+  The [cat] sat on the [mat].
+  ---questions
+  Q: What happened?
+  A: Nothing
+  A: Everything [correct]
+</tj-quiz-element>
+```
+
+---
+
+### 7. Chapter Book (`<tj-chapter-book>`)
+A multi-chapter reading companion with built-in TTS, translation toggles, and per-chapter comprehension quizzes.
+
+#### Usage
+```html
+<tj-chapter-book>
+{
+  "title": "My Adventure",
+  "chapters": [
+    {
+      "title": "Chapter 1",
+      "text": "Once upon a time...",
+      "translation": "กาลครั้งหนึ่ง...",
+      "quiz": [
+        { "question": "Who was there?", "options": ["Hero", "Villain"], "answer": 0 }
+      ]
+    }
+  ]
+}
+</tj-chapter-book>
+```
 
 ---
 
