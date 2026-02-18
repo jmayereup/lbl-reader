@@ -334,6 +334,8 @@ class TjInfoGap extends HTMLElement {
             }
         }
 
+        const isLast = this._isLastInstance();
+
         let html = `
       <style>${this.getBaseStyles()}</style>
       <div class="container score-screen">
@@ -345,11 +347,12 @@ class TjInfoGap extends HTMLElement {
         <p>You completed the "${this.activityData.topic}" activity as Player ${this.currentPlayerId}.</p>
         <div class="score-actions">
             <button class="role-btn" id="restart-btn">Try Again / Switch Player</button>
-            <button class="report-btn" id="report-btn">📄 See Report Card</button>
+            ${isLast ? `<button class="report-btn" id="report-btn">📄 See Report Card</button>` : ''}
         </div>
         ${combinedHtml}
       </div>
 
+      ${isLast ? `
       <div class="report-overlay" id="report-overlay" style="display:none;">
         <div class="report-modal">
           <div class="initial-form" id="initial-form">
@@ -364,6 +367,7 @@ class TjInfoGap extends HTMLElement {
           <div class="report-area" id="report-area" style="display:none;"></div>
         </div>
       </div>
+      ` : ''}
 `;
 
         this.shadowRoot.innerHTML = html;
@@ -377,23 +381,25 @@ class TjInfoGap extends HTMLElement {
             this.render();
         });
 
-        this.shadowRoot.getElementById('report-btn').addEventListener('click', () => {
-            this._showReportOverlay();
-        });
+        if (isLast) {
+            this.shadowRoot.getElementById('report-btn').addEventListener('click', () => {
+                this._showReportOverlay();
+            });
 
-        this.shadowRoot.getElementById('generate-btn').addEventListener('click', () => {
-            this._generateReport();
-        });
+            this.shadowRoot.getElementById('generate-btn').addEventListener('click', () => {
+                this._generateReport();
+            });
 
-        this.shadowRoot.getElementById('cancel-btn').addEventListener('click', () => {
-            this.shadowRoot.getElementById('report-overlay').style.display = 'none';
-        });
-
-        this.shadowRoot.getElementById('report-overlay').addEventListener('click', (e) => {
-            if (e.target.id === 'report-overlay') {
+            this.shadowRoot.getElementById('cancel-btn').addEventListener('click', () => {
                 this.shadowRoot.getElementById('report-overlay').style.display = 'none';
-            }
-        });
+            });
+
+            this.shadowRoot.getElementById('report-overlay').addEventListener('click', (e) => {
+                if (e.target.id === 'report-overlay') {
+                    this.shadowRoot.getElementById('report-overlay').style.display = 'none';
+                }
+            });
+        }
     }
 
     _showReportOverlay() {
@@ -430,38 +436,19 @@ class TjInfoGap extends HTMLElement {
 
         this.studentInfo = { nickname, number };
 
-        const percentage = Math.round((this.score / this.totalQuestions) * 100) || 0;
+        const combined = this._getCombinedScore();
+        const combinedPct = Math.round((combined.totalScore / combined.totalQuestions) * 100) || 0;
         const timestamp = new Date().toLocaleString();
-        const topic = this.activityData.topic || 'Info Gap Activity';
 
-        let emoji = '🎉';
-        if (percentage < 50) emoji = '💪';
-        else if (percentage < 80) emoji = '👍';
-
-        // Combined score section
-        let combinedHtml = '';
-        if (this._isLastInstance()) {
-            const combined = this._getCombinedScore();
-            if (combined.allDone) {
-                const combinedPct = Math.round((combined.totalScore / combined.totalQuestions) * 100) || 0;
-                let combinedEmoji = '🏆';
-                if (combinedPct < 50) combinedEmoji = '💪';
-                else if (combinedPct < 80) combinedEmoji = '⭐';
-                combinedHtml = `
-                    <div class="rc-combined">
-                        <div class="rc-combined-title">${combinedEmoji} Combined Score — All ${combined.count} Activities</div>
-                        <div class="rc-combined-score">${combined.totalScore} / ${combined.totalQuestions} &nbsp; <span class="rc-combined-pct">${combinedPct}%</span></div>
-                        <div class="rc-bar-track"><div class="rc-bar-fill" style="width:${combinedPct}%"></div></div>
-                    </div>
-                `;
-            }
-        }
+        let combinedEmoji = '🏆';
+        if (combinedPct < 50) combinedEmoji = '💪';
+        else if (combinedPct < 80) combinedEmoji = '⭐';
 
         const reportHtml = `
             <div class="rc-header">
                 <div class="rc-icon">📄</div>
                 <div class="rc-title">Report Card</div>
-                <div class="rc-activity">${topic}</div>
+                <div class="rc-activity">Info Gap — All ${combined.count} Activities</div>
             </div>
             <div class="rc-student">
                 <span class="rc-label">Student</span>
@@ -469,18 +456,16 @@ class TjInfoGap extends HTMLElement {
             </div>
             <div class="rc-score-row">
                 <div class="rc-score-circle">
-                    <div class="rc-score-val">${this.score}/${this.totalQuestions}</div>
-                    <div class="rc-score-pct">${percentage}%</div>
+                    <div class="rc-score-val">${combined.totalScore}/${combined.totalQuestions}</div>
+                    <div class="rc-score-pct">${combinedPct}%</div>
                 </div>
-                <div class="rc-score-label">${emoji} ${percentage >= 80 ? 'Excellent!' : percentage >= 50 ? 'Good effort!' : 'Keep practicing!'}</div>
+                <div class="rc-score-label">${combinedEmoji} ${combinedPct >= 80 ? 'Excellent!' : combinedPct >= 50 ? 'Good effort!' : 'Keep practicing!'}</div>
             </div>
-            <div class="rc-bar-track" style="margin: 0 0 16px 0;"><div class="rc-bar-fill" style="width:${percentage}%"></div></div>
+            <div class="rc-bar-track" style="margin: 0 0 16px 0;"><div class="rc-bar-fill" style="width:${combinedPct}%"></div></div>
             <div class="rc-details">
-                <div class="rc-detail-row"><span>Player</span><span>${this.currentPlayerId}</span></div>
-                <div class="rc-detail-row"><span>Questions Answered</span><span>${this.score} / ${this.totalQuestions}</span></div>
+                <div class="rc-detail-row"><span>Total Correct</span><span>${combined.totalScore} / ${combined.totalQuestions}</span></div>
                 <div class="rc-detail-row"><span>Completed On</span><span>${timestamp}</span></div>
             </div>
-            ${combinedHtml}
             <div class="rc-actions">
                 <button class="rc-close-btn" id="rc-close-btn">↩ Return to Activity</button>
             </div>
