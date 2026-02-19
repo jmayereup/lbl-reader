@@ -438,7 +438,6 @@ fieldset>legend {
 #teacherCode {
     letter-spacing: 0.1em;
     font-family: monospace;
-    font-weight: 700;
 }
 
 :host(.dark) #teacherCode {
@@ -1101,7 +1100,7 @@ fieldset>legend {
 
 .voice-card-header h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.25em;
     font-weight: 700;
 }
 
@@ -1116,7 +1115,7 @@ fieldset>legend {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 1.5rem;
+    font-size: 1.5em;
     transition: background 0.2s;
 }
 
@@ -1173,7 +1172,7 @@ fieldset>legend {
     color: white;
     padding: 0.2rem 0.5rem;
     border-radius: 2rem;
-    font-size: 0.75rem;
+    font-size: 0.75em;
     font-weight: 700;
     text-transform: uppercase;
 }
