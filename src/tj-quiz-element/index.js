@@ -51,32 +51,35 @@ class TjQuizElement extends HTMLElement {
     }
 
     connectedCallback() {
-        // Store the original content before rendering shadow DOM
-        this.originalContent = this.textContent;
+        // Use setTimeout to ensure children (text content) are parsed by the browser
+        setTimeout(() => {
+            // Store the original content before rendering shadow DOM
+            this.originalContent = this.textContent;
 
-        // Get submission URL from attribute if provided (overrides config file)
-        if (this.hasAttribute('submission-url')) {
-            this.submissionUrl = this.getAttribute('submission-url');
-        }
+            // Get submission URL from attribute if provided (overrides config file)
+            if (this.hasAttribute('submission-url')) {
+                this.submissionUrl = this.getAttribute('submission-url');
+            }
 
-        this.loadTemplate();
-        this.setAttribute('translate', 'no');
+            this.loadTemplate();
+            this.setAttribute('translate', 'no');
 
-        if (!this._shouldShowAudioControls()) {
-            const voiceBtn = this.shadowRoot.getElementById('voice-btn');
-            if (voiceBtn) voiceBtn.classList.add('hidden');
-        }
+            if (!this._shouldShowAudioControls()) {
+                const voiceBtn = this.shadowRoot.getElementById('voice-btn');
+                if (voiceBtn) voiceBtn.classList.add('hidden');
+            }
 
-        if (window.speechSynthesis) {
-            window.speechSynthesis.onvoiceschanged = () => this._updateVoiceList();
-            // Initial call if voices are already loaded
-            this._updateVoiceList();
-        }
+            if (window.speechSynthesis) {
+                window.speechSynthesis.onvoiceschanged = () => this._updateVoiceList();
+                // Initial call if voices are already loaded
+                this._updateVoiceList();
+            }
 
-        this.parseContent();
-        this.setupEventListeners();
-        this.generateQuiz();
-        this.lockQuizContent();
+            this.parseContent();
+            this.setupEventListeners();
+            this.generateQuiz();
+            this.lockQuizContent();
+        }, 0);
     }
 
     loadTemplate() {

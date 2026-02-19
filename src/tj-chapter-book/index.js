@@ -996,13 +996,16 @@ class TjChapterBook extends HTMLElement {
         if (src) {
             this.loadData(src);
         } else {
-            try {
-                const data = JSON.parse(this.textContent);
-                this.render(data);
-            } catch (e) {
-                console.error('Error parsing inline JSON data', e);
-                this.innerHTML = `<p style="color: red;">Error loading book data: Invalid JSON.</p>`;
-            }
+            // Use setTimeout to ensure children (JSON content) are parsed by the browser
+            setTimeout(() => {
+                try {
+                    const data = JSON.parse(this.textContent);
+                    this.render(data);
+                } catch (e) {
+                    console.error('Error parsing inline JSON data', e);
+                    this.innerHTML = `<p style="color: red;">Error loading book data: Invalid JSON.</p>`;
+                }
+            }, 0);
         }
     }
 
@@ -1333,7 +1336,7 @@ class TjChapterBook extends HTMLElement {
 
         const chapterHasTranslation = TjChapterBook.chapterHasTranslation(chapter);
 
-        const contentHtml = this.wrapWords(chapter.content);
+        const contentHtml = this.wrapWords(chapter.content ?? chapter.text);
         const translatedContentHtml = chapterHasTranslation ? this.wrapWords(chapter.translation) : '';
 
         const translationAsMainHtml = translatedContentHtml;
@@ -1606,6 +1609,7 @@ class TjChapterBook extends HTMLElement {
         const paragraphs = Array.isArray(content) ? content : [content];
 
         return paragraphs.map(p => {
+            if (p == null) return '';
             // Strip existing HTML tags if any (basic approach)
             const plainText = p.replace(/<[^>]*>/g, '');
 

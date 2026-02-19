@@ -6,15 +6,16 @@ import fs from 'fs';
 const entries = {};
 const srcDir = resolve(__dirname, 'src');
 
-fs.readdirSync(srcDir).forEach((file) => {
-  if (file.startsWith('tj-') && file.endsWith('.js')) {
-    const name = file.replace('.js', '');
-    entries[name] = resolve(srcDir, file);
+fs.readdirSync(srcDir).forEach((folder) => {
+  const folderPath = resolve(srcDir, folder);
+  if (fs.statSync(folderPath).isDirectory()) {
+    const indexPath = resolve(folderPath, 'index.js');
+    if (fs.existsSync(indexPath)) {
+      entries[folder] = indexPath;
+    }
   }
 });
 
-// Add tj-quiz-element specifically
-entries['tj-quiz-element'] = resolve(srcDir, 'tj-quiz-element/index.js');
 
 export default defineConfig({
   build: {

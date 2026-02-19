@@ -37,17 +37,18 @@ class TjInfoGap extends HTMLElement {
     }
 
     connectedCallback() {
-        const rawJson = this.textContent.trim();
-        this.textContent = '';
+        // Use setTimeout to ensure children (JSON content) are parsed by the browser
+        setTimeout(() => {
+            const rawJson = this.textContent.trim();
+            this.textContent = '';
 
-        try {
-            this.activityData = JSON.parse(rawJson);
-        } catch (error) {
-            this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
-            return;
-        }
-
-        this.render();
+            try {
+                this.activityData = JSON.parse(rawJson);
+                this.render();
+            } catch (error) {
+                this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
+            }
+        }, 0);
     }
 
     render() {

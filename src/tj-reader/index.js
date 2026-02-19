@@ -43,20 +43,23 @@ class TjReader extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render();
-    this.loadData();
-    this.checkBrowserSupport();
+    // Use setTimeout to ensure children (JSON content) are parsed by the browser
+    setTimeout(() => {
+      this.render();
+      this.loadData();
+      this.checkBrowserSupport();
 
-    // Ensure voices are loaded (Chrome/Edge can be async)
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        this._updateVoiceList();
-      };
-    }
-    // Also try immediately and after short delays (mobile often needs this)
-    this._updateVoiceList();
-    setTimeout(() => this._updateVoiceList(), 500);
-    setTimeout(() => this._updateVoiceList(), 1500);
+      // Ensure voices are loaded (Chrome/Edge can be async)
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          this._updateVoiceList();
+        };
+      }
+      // Also try immediately and after short delays (mobile often needs this)
+      this._updateVoiceList();
+      setTimeout(() => this._updateVoiceList(), 500);
+      setTimeout(() => this._updateVoiceList(), 1500);
+    }, 0);
   }
 
   loadData() {

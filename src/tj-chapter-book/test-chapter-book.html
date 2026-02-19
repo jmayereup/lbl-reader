@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chapter Book Demo</title>
-    <script src="dist/tj-chapter-book.js"></script>
+    <script type="module" src="../../dist/tj-chapter-book.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -24,31 +24,41 @@
       "language": "en-US",
       "chapters": [
         {
+          "id": "chapter-1",
           "title": "Chapter 1: The Arrival",
-          "text": "The storm was finally over. Leo looked around the beach. The sand was white and the trees were tall. He was alone on the island.",
+          "content": "The storm was finally over. Leo looked around the beach. The sand was white and the trees were tall. He was alone on the island.",
           "translation": "พายุก็สิ้นสุดลงในที่สุด ลีโอมองไปรอบๆ ชายหาด ทรายมีสีขาวและต้นไม้สูง เขาอยู่คนเดียวบนเกาะ",
           "quiz": [
             {
               "question": "What was the weather like before Leo arrived?",
-              "options": ["Sunny", "Stormy", "Snowy"],
-              "answer": 1
+              "options": [
+                { "value": "wrong", "text": "Sunny" },
+                { "value": "correct", "text": "Stormy" },
+                { "value": "wrong", "text": "Snowy" }
+              ]
             },
             {
               "question": "Was Leo with his friends?",
-              "options": ["Yes, he was.", "No, he was alone."],
-              "answer": 1
+              "options": [
+                { "value": "wrong", "text": "Yes, he was." },
+                { "value": "correct", "text": "No, he was alone." }
+              ]
             }
           ]
         },
         {
+          "id": "chapter-2",
           "title": "Chapter 2: Finding Water",
-          "text": "Leo was thirsty. He walked into the forest. He heard the sound of water. He found a small river behind some big rocks.",
+          "content": "Leo was thirsty. He walked into the forest. He heard the sound of water. He found a small river behind some big rocks.",
           "translation": "ลีโอรู้สึกกระหายน้ำ เขาเดินเข้าไปในป่า เขาได้ยินเสียงน้ำ เขาพบแม่น้ำสายเล็กๆ หลังโขดหินใหญ่บางก้อน",
           "quiz": [
             {
               "question": "Why did Leo walk into the forest?",
-              "options": ["He was hungry.", "He was thirsty.", "He was tired."],
-              "answer": 1
+              "options": [
+                { "value": "wrong", "text": "He was hungry." },
+                { "value": "correct", "text": "He was thirsty." },
+                { "value": "wrong", "text": "He was tired." }
+              ]
             }
           ]
         }

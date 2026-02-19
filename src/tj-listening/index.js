@@ -36,23 +36,24 @@ class TjListening extends HTMLElement {
     }
 
     connectedCallback() {
-        const rawJson = this.textContent.trim();
-        this.textContent = '';
+        // Use setTimeout to ensure children (JSON content) are parsed by the browser
+        setTimeout(() => {
+            const rawJson = this.textContent.trim();
+            this.textContent = '';
 
-        try {
-            this.lessonData = JSON.parse(rawJson);
-        } catch (error) {
-            this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
-            return;
-        }
+            try {
+                this.lessonData = JSON.parse(rawJson);
+                this.totalQuestions = this.lessonData.listening?.questions?.length || 0;
+                this.render();
 
-        this.totalQuestions = this.lessonData.listening?.questions?.length || 0;
-        this.render();
-
-        // Retry voice list population for mobile
-        this._updateVoiceList();
-        setTimeout(() => this._updateVoiceList(), 500);
-        setTimeout(() => this._updateVoiceList(), 1500);
+                // Retry voice list population for mobile
+                this._updateVoiceList();
+                setTimeout(() => this._updateVoiceList(), 500);
+                setTimeout(() => this._updateVoiceList(), 1500);
+            } catch (error) {
+                this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
+            }
+        }, 0);
     }
 
     _getLang() {
