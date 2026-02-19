@@ -8,13 +8,13 @@ You can use these components directly without downloading them by linking to the
 
 ```html
 <!-- Components -->
-<script src="https://jmayereup.github.io/tj-components/lbl-reader.js" defer></script>
-<script src="https://jmayereup.github.io/tj-components/grammar-hearts.js" defer></script>
-<script src="https://jmayereup.github.io/tj-components/tj-info-gap.js" defer></script>
-<script src="https://jmayereup.github.io/tj-components/tj-listening.js" defer></script>
-<script src="https://jmayereup.github.io/tj-components/speed-review.js" defer></script>
-<script src="https://jmayereup.github.io/tj-components/tj-quiz-element.js" defer></script>
-<script src="https://jmayereup.github.io/tj-components/tj-chapter-book.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-reader.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-grammar-hearts.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-info-gap.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-listening.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-speed-review.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-quiz-element.js" defer></script>
+<script src="https://jmayereup.github.io/tj-components/dist/tj-chapter-book.js" defer></script>
 
 <!-- Required Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -201,3 +201,13 @@ A multi-chapter reading companion with built-in TTS, translation toggles, and pe
 1.  **Add Script Tags**: Add the CDN script tags to your blog post (Custom HTML block).
 2.  **Embed Component**: Paste the component tag and your JSON data directly into the post.
 3.  **Fonts**: Ensure the Google Fonts link is included.
+
+---
+
+## 🛠️ Developer Guide: Updating the CDN
+
+To update the components served via the GitHub Pages CDN:
+
+1.  **Build**: Run `npm run build` to generate the production files in the `dist/` directory.
+2.  **Commit**: Ensure the `dist/` folder is committed to your repository.
+3.  **Push**: Push your changes to GitHub. The new versions will be available via the CDN URLs.
