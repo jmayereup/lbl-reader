@@ -302,23 +302,46 @@ const styles = `
         background-color: #a16207;
     }
 
-    .quiz-container.locked-open {
-        display: none;
-    }
-
-    .quiz-lock-message {
-        display: none;
-        background: var(--tj-quiz-bg);
-        padding: 1.5em;
-        border-radius: 0.5em;
-        border: 1px dashed var(--tj-card-border);
+    .lang-selector-container {
+        margin: 1.5em 0;
         text-align: center;
-        color: var(--tj-subtitle-color);
-        margin-top: 2em;
+        width: 100%;
     }
 
-    .quiz-container.locked-delay {
-        display: none;
+    .lang-selector-label {
+        font-weight: bold;
+        color: var(--tj-subtitle-color);
+        margin-bottom: 0.75em;
+        font-size: 1.1em;
+    }
+
+    .lang-selector-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1em;
+        flex-wrap: wrap;
+    }
+
+    .lang-btn {
+        background: var(--tj-card-bg);
+        border: 2px solid var(--tj-card-border);
+        color: var(--tj-text-color);
+        padding: 0.75em 1.5em;
+        border-radius: 9999px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .lang-btn:hover {
+        border-color: var(--tj-accent-color);
+    }
+
+    .lang-btn.active {
+        background: var(--tj-accent-color);
+        border-color: var(--tj-accent-color);
+        color: white;
     }
 
     .quiz-container.quiz-hidden-checked,
@@ -923,6 +946,16 @@ const styles = `
 `;
 
 class TjChapterBook extends HTMLElement {
+    getLanguageName(localeStr) {
+        if (!localeStr) return 'Unknown';
+        try {
+            const dn = new Intl.DisplayNames(['en'], { type: 'language' });
+            return dn.of(localeStr.split(/[-_]/)[0]);
+        } catch(e) {
+            return localeStr;
+        }
+    }
+
     static chapterHasTranslation(chapter) {
         if (!chapter) return false;
         if (typeof chapter.translation !== 'string') return false;
@@ -1165,12 +1198,17 @@ class TjChapterBook extends HTMLElement {
         // Store language if provided
         if (data.language) {
             this.language = data.language;
+            this.originalLanguage = data.language;
+        } else {
+            this.originalLanguage = this.language;
         }
 
         if (data.translationLanguage) {
             this.translationLanguage = data.translationLanguage;
+            this.originalTranslationLanguage = data.translationLanguage;
         } else {
             this.translationLanguage = this.language.startsWith('en') ? 'th-TH' : 'en-US';
+            this.originalTranslationLanguage = this.translationLanguage;
         }
 
         // Inject styles if not already present
@@ -1198,17 +1236,21 @@ class TjChapterBook extends HTMLElement {
                     <button id="print-toggle" class="print-toggle" aria-label="Print" title="Print friendly version">
                         ${printerIcon}
                     </button>
-                    ${this.hasAnyTranslations ? `
-                    <button id="lang-swap" class="lang-swap" aria-label="Swap target and translation language" title="Swap target and translation language">
-                        ${swapLangIcon}
-                    </button>
-                    ` : ''}
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                         ${moonIcon}
                     </button>
                 </div>
                 <h1 class="book-title">${data.title}</h1>
                 <p class="book-subtitle">${data.subtitle}</p>
+                ${this.hasAnyTranslations ? `
+                <div class="lang-selector-container">
+                    <p class="lang-selector-label">I want to read in:</p>
+                    <div class="lang-selector-buttons">
+                        <button class="lang-btn ${!this.isTextSwapped ? 'active' : ''}" data-action="set-lang" data-swap="false">${this.getLanguageName(this.originalLanguage)}</button>
+                        <button class="lang-btn ${this.isTextSwapped ? 'active' : ''}" data-action="set-lang" data-swap="true">${this.getLanguageName(this.originalTranslationLanguage)}</button>
+                    </div>
+                </div>
+                ` : ''}
             </header>
 
             <div class="chapters-container" translate="no">
@@ -1409,7 +1451,7 @@ class TjChapterBook extends HTMLElement {
                 </div>
 
                 ${chapterHasTranslation ? `
-                <aside>
+                <aside id="trans-aside-${chapter.id}" style="display: none;">
                 <details class="translation-details group">
                     <summary class="translation-summary">
                         <span style="display: flex; align-items: center; gap: 0.5rem;">${langIcon} Translation</span>
@@ -1432,8 +1474,8 @@ class TjChapterBook extends HTMLElement {
                     ${quizHtml}
                     <button data-action="check-quiz" data-target="${quizId}" class="check-btn">Check</button>
                 </div>
-                <div id="lock-msg-${chapter.id}" class="quiz-lock-message">
-                    Questions will reappear in <span class="countdown">10</span> seconds...
+                <div id="lock-msg-${chapter.id}" class="quiz-lock-message" style="display: none;">
+                    Answers will disappear when you scroll past.
                 </div>
             </section>
         `;
@@ -1456,33 +1498,34 @@ class TjChapterBook extends HTMLElement {
         }
 
         // Swap target/translation languages (TTS)
-        const langSwap = this.querySelector('#lang-swap');
-        if (langSwap) {
-            langSwap.addEventListener('click', () => {
-                // Stop any current speech so the next playback uses the swapped mapping.
-                this.cancelTTS();
+        this.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetSwap = btn.dataset.swap === 'true';
+                if (this.isTextSwapped !== targetSwap) {
+                    this.cancelTTS();
 
-                const prevTarget = this.language;
-                this.language = this.translationLanguage;
-                this.translationLanguage = prevTarget;
+                    const prevTarget = this.language;
+                    this.language = this.translationLanguage;
+                    this.translationLanguage = prevTarget;
 
-                // Swap visible text positions too.
-                this.isTextSwapped = !this.isTextSwapped;
-                this.applyLanguageTextSwap();
+                    this.isTextSwapped = targetSwap;
+                    this.applyLanguageTextSwap();
 
-                // Update translation play buttons' data-lang since they're rendered with a fixed value.
-                this.querySelectorAll('button[id^="btn-trans-"][data-action="play"]').forEach(btn => {
-                    btn.dataset.lang = this.translationLanguage;
-                });
+                    this.querySelectorAll('button[id^="btn-trans-"][data-action="play"]').forEach(b => {
+                        b.dataset.lang = this.translationLanguage;
+                    });
 
-                // Refresh voice list for the new target language
-                this.selectedVoiceName = null;
-                this._updateVoiceList();
+                    this.selectedVoiceName = null;
+                    this._updateVoiceList();
 
-                // Reset the app (silent) to clear any answered questions
-                this.resetApp(true);
+                    this.querySelectorAll('.lang-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.swap === String(this.isTextSwapped));
+                    });
+
+                    this.resetApp(true);
+                }
             });
-        }
+        });
 
         // Voice selection button
         const voiceBtn = this.querySelector('#voice-btn');
@@ -1689,47 +1732,7 @@ class TjChapterBook extends HTMLElement {
     }
 
     handleTranslationToggle(chapterId, isOpen) {
-        const quizContainer = this.querySelector(`#quiz-${chapterId}`);
-        const lockMsg = this.querySelector(`#lock-msg-${chapterId}`);
-
-        if (!quizContainer || !lockMsg) return;
-
-        // If quiz is already hidden due to being checked, don't show lockout logic
-        if (quizContainer.classList.contains('quiz-hidden-checked') || quizContainer.dataset.checked === 'true') return;
-
-        // Clear any existing timer for this chapter
-        if (this.lockoutTimers.has(chapterId)) {
-            clearInterval(this.lockoutTimers.get(chapterId));
-            this.lockoutTimers.delete(chapterId);
-        }
-
-        if (isOpen) {
-            quizContainer.classList.add('locked-open');
-            quizContainer.classList.remove('locked-delay');
-            lockMsg.classList.remove('visible');
-        } else {
-            quizContainer.classList.remove('locked-open');
-            quizContainer.classList.add('locked-delay');
-
-            let timeLeft = 10;
-            const countdownEl = lockMsg.querySelector('.countdown');
-            countdownEl.textContent = timeLeft;
-            lockMsg.classList.add('visible');
-
-            const timer = setInterval(() => {
-                timeLeft--;
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    this.lockoutTimers.delete(chapterId);
-                    quizContainer.classList.remove('locked-delay');
-                    lockMsg.classList.remove('visible');
-                } else {
-                    countdownEl.textContent = timeLeft;
-                }
-            }, 1000);
-
-            this.lockoutTimers.set(chapterId, timer);
-        }
+        // Feature removed: No longer lock the quiz when translation is opened.
     }
 
     playAudio(elementId, rate, btnId) {
@@ -2079,16 +2082,16 @@ class TjChapterBook extends HTMLElement {
         // Notify user that questions will disappear on scroll
         const chapterId = quizId.replace('quiz-', '');
         const lockMsg = this.querySelector(`#lock-msg-${chapterId}`);
+        const transAside = chapterCard.querySelector(`#trans-aside-${chapterId}`);
+
+        if (transAside) {
+            transAside.style.display = 'block';
+        }
 
         if (lockMsg) {
-            // Clear any existing timer for this chapter
-            if (this.lockoutTimers.has(chapterId)) {
-                clearInterval(this.lockoutTimers.get(chapterId));
-                this.lockoutTimers.delete(chapterId);
-            }
-
-            lockMsg.innerHTML = `Answers will disappear when you scroll past.`;
+            lockMsg.innerHTML = `Answers and translation will disappear when you scroll past.`;
             lockMsg.classList.add('visible');
+            lockMsg.style.display = 'block';
         }
     }
 
