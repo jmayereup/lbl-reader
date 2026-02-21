@@ -1,0 +1,32 @@
+{
+  "title": "Unit 1: Basic Listening & Recording",
+  "instructions": "Listen carefully to the native speaker, then try to record your own voice and compare.",
+  "language": "en-US",
+  "activities": [
+    {
+      "type": "listen_record",
+      "targetText": "The ship is leaving the port.",
+      "phoneticHint": "ðə ʃɪp ɪz ˈliːvɪŋ ðə pɔːt",
+      "translation": "เรือกำลังออกจากท่าเรือ"
+    },
+    {
+      "type": "listen_record",
+      "targetText": "Don't slip on the floor.",
+      "phoneticHint": "doʊnt slɪp ɑn ðə flɔr",
+      "translation": "อย่าลื่นล้มบนพื้นนะ"
+    },
+    {
+      "type": "minimal_pair",
+      "audioText": "Don't slip on the floor.",
+      "options": ["slip", "sleep"],
+      "correctAnswer": "slip",
+      "focus": "Vowel /ɪ/ vs /iː/"
+    },
+    {
+      "type": "scramble",
+      "audioText": "Where are you going tonight?",
+      "words": ["Where", "are", "you", "going", "tonight?"],
+      "distractors": ["were", "your", "going?"]
+    }
+  ]
+}

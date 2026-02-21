@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronunciation Test | TJ Components</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #22d3ee;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Pronunciation Test</h2>
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to Home
+        </a>
+    </div>
+
+    <div class="container">
+        <tj-pronunciation>
+{
+  "title": "Unit 1: Basic Listening & Recording",
+  "instructions": "Listen carefully to the audio sequences. For Minimal Pair activities, listen to both words twice, then identify the final word spoken.",
+  "language": "en-US",
+  "activities": [
+    {
+      "type": "listen_record",
+      "targetText": "The ship is leaving the port.",
+      "phoneticHint": "ðə ʃɪp ɪz ˈliːvɪŋ ðə pɔːt",
+      "translation": "เรือกำลังออกจากท่าเรือ"
+    },
+    {
+      "type": "listen_record",
+      "targetText": "Don't slip on the floor.",
+      "phoneticHint": "doʊnt slɪp ɑn ðə flɔr",
+      "translation": "อย่าลื่นล้มบนพื้นนะ"
+    },
+    {
+      "type": "minimal_pair",
+      "audioText": "Don't slip on the floor.",
+      "options": ["slip", "sleep"],
+      "correctAnswer": "slip",
+      "focus": "Vowel /ɪ/ vs /iː/"
+    },
+    {
+      "type": "scramble",
+      "audioText": "Where are you going tonight?",
+      "words": ["Where", "are", "you", "going", "tonight?"],
+      "distractors": ["were", "your", "going?"]
+    }
+  ]
+}
+        </tj-pronunciation>
+    </div>
+
+    <script type="module" src="/src/tj-pronunciation/index.js"></script>
+</body>
+</html>

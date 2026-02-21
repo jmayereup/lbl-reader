@@ -1,4 +1,4 @@
-const x = `
+const k = `
     @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap');
 
     tj-chapter-book {
@@ -302,23 +302,46 @@ const x = `
         background-color: #a16207;
     }
 
-    .quiz-container.locked-open {
-        display: none;
-    }
-
-    .quiz-lock-message {
-        display: none;
-        background: var(--tj-quiz-bg);
-        padding: 1.5em;
-        border-radius: 0.5em;
-        border: 1px dashed var(--tj-card-border);
+    .lang-selector-container {
+        margin: 1.5em 0;
         text-align: center;
-        color: var(--tj-subtitle-color);
-        margin-top: 2em;
+        width: 100%;
     }
 
-    .quiz-container.locked-delay {
-        display: none;
+    .lang-selector-label {
+        font-weight: bold;
+        color: var(--tj-subtitle-color);
+        margin-bottom: 0.75em;
+        font-size: 1.1em;
+    }
+
+    .lang-selector-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1em;
+        flex-wrap: wrap;
+    }
+
+    .lang-btn {
+        background: var(--tj-card-bg);
+        border: 2px solid var(--tj-card-border);
+        color: var(--tj-text-color);
+        padding: 0.75em 1.5em;
+        border-radius: 9999px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .lang-btn:hover {
+        border-color: var(--tj-accent-color);
+    }
+
+    .lang-btn.active {
+        background: var(--tj-accent-color);
+        border-color: var(--tj-accent-color);
+        color: white;
     }
 
     .quiz-container.quiz-hidden-checked,
@@ -922,6 +945,14 @@ const x = `
     }
 `;
 class g extends HTMLElement {
+  getLanguageName(t) {
+    if (!t) return "Unknown";
+    try {
+      return new Intl.DisplayNames(["en"], { type: "language" }).of(t.split(/[-_]/)[0]);
+    } catch {
+      return t;
+    }
+  }
   static chapterHasTranslation(t) {
     return !t || typeof t.translation != "string" ? !1 : t.translation.trim().length > 0;
   }
@@ -972,14 +1003,14 @@ class g extends HTMLElement {
     const o = this.synth.getVoices();
     if (o.length === 0) return null;
     const e = t.split(/[-_]/)[0].toLowerCase();
-    let r = o.filter((a) => a.lang.toLowerCase() === t.toLowerCase());
-    if (r.length === 0 && (r = o.filter((a) => a.lang.split(/[-_]/)[0].toLowerCase() === e)), r.length === 0) return null;
-    const i = ["natural", "google", "premium", "siri"];
-    for (const a of i) {
-      const s = r.find((p) => p.name.toLowerCase().includes(a));
-      if (s) return s;
+    let r = o.filter((i) => i.lang.toLowerCase() === t.toLowerCase());
+    if (r.length === 0 && (r = o.filter((i) => i.lang.split(/[-_]/)[0].toLowerCase() === e)), r.length === 0) return null;
+    const a = ["natural", "google", "premium", "siri"];
+    for (const i of a) {
+      const l = r.find((n) => n.name.toLowerCase().includes(i));
+      if (l) return l;
     }
-    return r.find((a) => !a.name.toLowerCase().includes("microsoft")) || r[0];
+    return r.find((i) => !i.name.toLowerCase().includes("microsoft")) || r[0];
   }
   _showVoiceOverlay() {
     const t = this.querySelector(".voice-overlay");
@@ -993,21 +1024,21 @@ class g extends HTMLElement {
     if (!this.synth) return;
     const t = this.synth.getVoices(), o = this.querySelector(".voice-list"), e = this.querySelector("#voice-btn");
     if (!o || !e || t.length === 0) return;
-    const r = this.language, i = r.split(/[-_]/)[0].toLowerCase(), n = t.filter((s) => s.lang.split(/[-_]/)[0].toLowerCase() === i), a = this._getBestVoice(r);
-    !this.selectedVoiceName && a && (this.selectedVoiceName = a.name), o.innerHTML = "", n.sort((s, p) => s.name.localeCompare(p.name)), n.forEach((s) => {
-      const p = document.createElement("button");
-      p.classList.add("voice-option-btn"), this.selectedVoiceName === s.name && p.classList.add("active");
-      let l = `<span>${s.name}</span>`;
-      a && s.name === a.name && (l += '<span class="badge">Best</span>'), p.innerHTML = l, p.onclick = () => {
-        this.selectedVoiceName = s.name, this.cancelTTS(), this._updateVoiceList(), this._hideVoiceOverlay();
-      }, o.appendChild(p);
+    const r = this.language, a = r.split(/[-_]/)[0].toLowerCase(), s = t.filter((l) => l.lang.split(/[-_]/)[0].toLowerCase() === a), i = this._getBestVoice(r);
+    !this.selectedVoiceName && i && (this.selectedVoiceName = i.name), o.innerHTML = "", s.sort((l, n) => l.name.localeCompare(n.name)), s.forEach((l) => {
+      const n = document.createElement("button");
+      n.classList.add("voice-option-btn"), this.selectedVoiceName === l.name && n.classList.add("active");
+      let p = `<span>${l.name}</span>`;
+      i && l.name === i.name && (p += '<span class="badge">Best</span>'), n.innerHTML = p, n.onclick = () => {
+        this.selectedVoiceName = l.name, this.cancelTTS(), this._updateVoiceList(), this._hideVoiceOverlay();
+      }, o.appendChild(n);
     });
   }
   _initVisibilityObserver() {
     this._visibilityObserver = new IntersectionObserver((t) => {
       t.forEach((o) => {
-        const e = o.target, r = e.id, i = e.querySelector(`#quiz-${r}`);
-        !o.isIntersecting && o.boundingClientRect.bottom < 0 && i && i.dataset.checked === "true" && !i.classList.contains("quiz-hidden-checked") && this._hideCheckedQuiz(e, i);
+        const e = o.target, r = e.id, a = e.querySelector(`#quiz-${r}`);
+        !o.isIntersecting && o.boundingClientRect.bottom < 0 && a && a.dataset.checked === "true" && !a.classList.contains("quiz-hidden-checked") && this._hideCheckedQuiz(e, a);
       });
     }, {
       threshold: 0,
@@ -1019,13 +1050,13 @@ class g extends HTMLElement {
     o.offsetHeight, o.classList.add("quiz-hidden-checked"), e && (e.classList.add("translation-hidden-checked"), e.open = !1), r && (r.innerHTML = "Results Hidden"), console.log(`Hidden checked quiz for chapter ${t.id}`);
   }
   render(t) {
-    if (this.hasAnyTranslations = g.bookHasAnyTranslations(t), this.absoluteTotalQuestions = 0, t.chapters && t.chapters.forEach((i) => {
-      i.quiz && (this.absoluteTotalQuestions += i.quiz.length);
-    }), t.language && (this.language = t.language), t.translationLanguage ? this.translationLanguage = t.translationLanguage : this.translationLanguage = this.language.startsWith("en") ? "th-TH" : "en-US", !document.getElementById("tj-chapter-book-styles")) {
-      const i = document.createElement("style");
-      i.id = "tj-chapter-book-styles", i.textContent = x, document.head.appendChild(i);
+    if (this.hasAnyTranslations = g.bookHasAnyTranslations(t), this.absoluteTotalQuestions = 0, t.chapters && t.chapters.forEach((r) => {
+      r.quiz && (this.absoluteTotalQuestions += r.quiz.length);
+    }), t.language ? (this.language = t.language, this.originalLanguage = t.language) : this.originalLanguage = this.language, t.translationLanguage ? (this.translationLanguage = t.translationLanguage, this.originalTranslationLanguage = t.translationLanguage) : (this.translationLanguage = this.language.startsWith("en") ? "th-TH" : "en-US", this.originalTranslationLanguage = this.translationLanguage), !document.getElementById("tj-chapter-book-styles")) {
+      const r = document.createElement("style");
+      r.id = "tj-chapter-book-styles", r.textContent = k, document.head.appendChild(r);
     }
-    const o = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>', e = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>', r = '<svg width="20px" height="20px" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>swap-horizontal-circle</title> <g id="Layer_2" data-name="Layer 2"> <g id="invisible_box" data-name="invisible box"> <rect width="48" height="48" fill="none"></rect> </g> <g id="icons_Q2" data-name="icons Q2"> <path d="M36.4,28.6l-4.9-5a2.1,2.1,0,0,0-2.7-.2,1.9,1.9,0,0,0-.2,3L30.2,28H15a2,2,0,0,0,0,4H30.2l-1.6,1.6a1.9,1.9,0,0,0,.2,3,2.1,2.1,0,0,0,2.7-.2l4.9-5A1.9,1.9,0,0,0,36.4,28.6Z"></path> <path d="M33,16H17.8l1.6-1.6a1.9,1.9,0,0,0-.2-3,2.1,2.1,0,0,0-2.7.2l-4.9,5a1.9,1.9,0,0,0,0,2.8l4.9,5a2.1,2.1,0,0,0,2.7.2,1.9,1.9,0,0,0,.2-3L17.8,20H33a2,2,0,0,0,0-4Z"></path> <path d="M42,24A18,18,0,1,1,24,6,18.1,18.1,0,0,1,42,24m4,0A22,22,0,1,0,24,46,21.9,21.9,0,0,0,46,24Z"></path> </g> </g> </g></svg>';
+    const o = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>', e = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>';
     this.innerHTML = `
             <header class="book-header">
                 <div class="header-actions">
@@ -1039,21 +1070,25 @@ class g extends HTMLElement {
                     <button id="print-toggle" class="print-toggle" aria-label="Print" title="Print friendly version">
                         ${e}
                     </button>
-                    ${this.hasAnyTranslations ? `
-                    <button id="lang-swap" class="lang-swap" aria-label="Swap target and translation language" title="Swap target and translation language">
-                        ${r}
-                    </button>
-                    ` : ""}
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                         ${o}
                     </button>
                 </div>
                 <h1 class="book-title">${t.title}</h1>
                 <p class="book-subtitle">${t.subtitle}</p>
+                ${this.hasAnyTranslations ? `
+                <div class="lang-selector-container">
+                    <p class="lang-selector-label">I want to read in:</p>
+                    <div class="lang-selector-buttons">
+                        <button class="lang-btn ${this.isTextSwapped ? "" : "active"}" data-action="set-lang" data-swap="false">${this.getLanguageName(this.originalLanguage)}</button>
+                        <button class="lang-btn ${this.isTextSwapped ? "active" : ""}" data-action="set-lang" data-swap="true">${this.getLanguageName(this.originalTranslationLanguage)}</button>
+                    </div>
+                </div>
+                ` : ""}
             </header>
 
             <div class="chapters-container" translate="no">
-                ${t.chapters.map((i, n) => this.renderChapter(i, n)).join("")}
+                ${t.chapters.map((r, a) => this.renderChapter(r, a)).join("")}
             </div>
 
             <footer class="book-footer">
@@ -1107,8 +1142,8 @@ class g extends HTMLElement {
                 </div>
             </div>
 
-        `, this.attachEventListeners(), this._updateVoiceList(), this.checkBrowserSupport(), this.querySelectorAll(".chapter-card").forEach((i) => {
-      this._visibilityObserver && this._visibilityObserver.observe(i);
+        `, this.attachEventListeners(), this._updateVoiceList(), this.checkBrowserSupport(), this.querySelectorAll(".chapter-card").forEach((r) => {
+      this._visibilityObserver && this._visibilityObserver.observe(r);
     });
   }
   _getAndroidIntentLink() {
@@ -1136,20 +1171,20 @@ class g extends HTMLElement {
     return !(t.includes("wv") || t.includes("webview") || t.includes("instagram") || t.includes("facebook") || t.includes("line"));
   }
   renderChapter(t, o) {
-    const e = `text-${t.id}`, r = `quiz-${t.id}`, i = `trans-${t.id}`, n = g.chapterHasTranslation(t), a = this.wrapWords(t.content ?? t.text), s = n ? this.wrapWords(t.translation) : "", p = s, l = t.quiz.map((f, v) => `
+    const e = `text-${t.id}`, r = `quiz-${t.id}`, a = `trans-${t.id}`, s = g.chapterHasTranslation(t), i = this.wrapWords(t.content ?? t.text), l = s ? this.wrapWords(t.translation) : "", n = l, p = t.quiz.map((b, f) => `
             <div class="question-block">
-                <p class="question-text">${f.question}</p>
-                ${f.options.map((y) => `
+                <p class="question-text">${b.question}</p>
+                ${b.options.map((v) => `
                     <label class="option-label">
-                        <input type="radio" name="${t.id}-q${v}" value="${y.value}"> ${y.text}
+                        <input type="radio" name="${t.id}-q${f}" value="${v.value}"> ${v.text}
                     </label>
                 `).join("")}
                 <p class="feedback"></p>
             </div>
-        `).join(""), c = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', d = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>', h = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>', u = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>', m = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>';
-    let b;
+        `).join(""), c = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', d = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>', h = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>', u = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>', y = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>';
+    let m;
     if (this.shouldShowAudioControls())
-      b = `
+      m = `
                 <div class="audio-controls">
                     <button data-action="play" data-rate="1.0" data-target="${e}" id="btn-${t.id}-normal" class="audio-btn audio-btn-normal">
                         <span class="icon-wrapper">${c}</span> Normal
@@ -1162,60 +1197,60 @@ class g extends HTMLElement {
                     </button>
                 </div>`;
     else {
-      const f = /android/i.test(navigator.userAgent);
-      let v = "";
-      if (f) {
-        const w = window.location.href.replace(/^https?:\/\//, ""), k = window.location.protocol.replace(":", "");
-        v = `<div style="margin-top: 0.5em;"><a href="${`intent://${w}#Intent;scheme=${k};package=com.android.chrome;end`}" style="color: var(--tj-accent-color); text-decoration: underline; font-weight: bold;">Open in Chrome</a></div>`;
+      const b = /android/i.test(navigator.userAgent);
+      let f = "";
+      if (b) {
+        const w = window.location.href.replace(/^https?:\/\//, ""), x = window.location.protocol.replace(":", "");
+        f = `<div style="margin-top: 0.5em;"><a href="${`intent://${w}#Intent;scheme=${x};package=com.android.chrome;end`}" style="color: var(--tj-accent-color); text-decoration: underline; font-weight: bold;">Open in Chrome</a></div>`;
       }
-      b = `
+      m = `
                 <div style="background-color: var(--tj-btn-bg); color: var(--tj-subtitle-color); padding: 0.75em; border-radius: 0.5em; border: 1px dashed var(--tj-card-border); text-align: center; font-size: 0.9em; margin-bottom: 1em;">
                     <p style="margin-bottom: 0.25em;">🎧 Audio available in Chrome or Safari</p>
                     <p>เสียงบรรยายใช้ได้ใน Chrome หรือ Safari</p>
-                    ${v}
+                    ${f}
                 </div>`;
     }
     return `
             <section id="${t.id}" class="chapter-card">
                 <h2 class="chapter-title">${t.title}</h2>
                 
-                ${b}
+                ${m}
 
-                <template data-tj-template="main-original">${a}</template>
-                ${n ? `<template data-tj-template="main-translation">${s}</template>` : ""}
-                <template data-tj-template="trans-original">${a}</template>
-                ${n ? `<template data-tj-template="trans-translation">${s}</template>` : ""}
+                <template data-tj-template="main-original">${i}</template>
+                ${s ? `<template data-tj-template="main-translation">${l}</template>` : ""}
+                <template data-tj-template="trans-original">${i}</template>
+                ${s ? `<template data-tj-template="trans-translation">${l}</template>` : ""}
 
                 <div id="${e}" class="chapter-text">
-                    ${this.isTextSwapped && n ? p : a}
+                    ${this.isTextSwapped && s ? n : i}
                 </div>
 
-                ${n ? `
-                <aside>
+                ${s ? `
+                <aside id="trans-aside-${t.id}" style="display: none;">
                 <details class="translation-details group">
                     <summary class="translation-summary">
                         <span style="display: flex; align-items: center; gap: 0.5rem;">${h} Translation</span>
                         <span class="chevron">${u}</span>
                     </summary>
                     <div style="padding: 0.5em 0.75em 0;">
-                        <button data-action="play" data-rate="1.0" data-target="${i}" data-lang="${this.translationLanguage}" id="btn-trans-${t.id}" class="audio-btn audio-btn-normal" style="font-size: 0.8em; padding: 0.25em 0.5em;">
+                        <button data-action="play" data-rate="1.0" data-target="${a}" data-lang="${this.translationLanguage}" id="btn-trans-${t.id}" class="audio-btn audio-btn-normal" style="font-size: 0.8em; padding: 0.25em 0.5em;">
                             <span class="icon-wrapper">${c}</span> Play
                         </button>
                     </div>
-                    <div id="${i}" class="translation-content">
-                        ${this.isTextSwapped ? a : s}
+                    <div id="${a}" class="translation-content">
+                        ${this.isTextSwapped ? i : l}
                     </div>
                 </details>
                 </aside>
                 ` : ""}
 
                 <div class="quiz-container" id="${r}">
-                    <h3 class="quiz-title">${m} Comprehension</h3>
-                    ${l}
+                    <h3 class="quiz-title">${y} Comprehension</h3>
+                    ${p}
                     <button data-action="check-quiz" data-target="${r}" class="check-btn">Check</button>
                 </div>
-                <div id="lock-msg-${t.id}" class="quiz-lock-message">
-                    Questions will reappear in <span class="countdown">10</span> seconds...
+                <div id="lock-msg-${t.id}" class="quiz-lock-message" style="display: none;">
+                    Answers will disappear when you scroll past.
                 </div>
             </section>
         `;
@@ -1224,67 +1259,72 @@ class g extends HTMLElement {
     g.ensureGlobalPrintScoping();
     const t = this.querySelector("#print-toggle");
     t && t.addEventListener("click", () => {
-      document.querySelectorAll('tj-chapter-book[data-tj-print-target="true"]').forEach((l) => {
-        l.removeAttribute("data-tj-print-target");
+      document.querySelectorAll('tj-chapter-book[data-tj-print-target="true"]').forEach((n) => {
+        n.removeAttribute("data-tj-print-target");
       }), this.setAttribute("data-tj-print-target", "true"), document.documentElement.classList.add("tj-print-scope"), window.print();
-    });
-    const o = this.querySelector("#lang-swap");
-    o && o.addEventListener("click", () => {
-      this.cancelTTS();
-      const l = this.language;
-      this.language = this.translationLanguage, this.translationLanguage = l, this.isTextSwapped = !this.isTextSwapped, this.applyLanguageTextSwap(), this.querySelectorAll('button[id^="btn-trans-"][data-action="play"]').forEach((c) => {
-        c.dataset.lang = this.translationLanguage;
-      }), this.selectedVoiceName = null, this._updateVoiceList(), this.resetApp(!0);
-    });
-    const e = this.querySelector("#voice-btn");
-    e && e.addEventListener("click", () => {
-      this._showVoiceOverlay();
-    });
-    const r = this.querySelector(".close-voice-btn");
-    r && r.addEventListener("click", () => {
-      this._hideVoiceOverlay();
-    });
-    const i = this.querySelector(".voice-overlay");
-    i && i.addEventListener("click", (l) => {
-      l.target === i && this._hideVoiceOverlay();
-    });
-    const n = this.querySelector("#theme-toggle");
-    n && n.addEventListener("click", () => {
-      this.classList.toggle("dark-theme");
-      const l = this.classList.contains("dark-theme"), c = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>', d = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-      n.innerHTML = l ? c : d;
-    }), this.querySelectorAll('button[data-action="play"]').forEach((l) => {
-      l.addEventListener("click", (c) => {
-        const d = c.target.closest("button"), h = d.dataset.target, u = parseFloat(d.dataset.rate);
-        this.playAudio(h, u, d.id);
-      });
-    }), this.querySelectorAll('button[data-action="cancel-tts"]').forEach((l) => {
-      l.addEventListener("click", () => {
-        this.cancelTTS();
-      });
-    }), this.querySelectorAll('button[data-action="check-quiz"]').forEach((l) => {
-      l.addEventListener("click", (c) => {
-        const d = c.target.closest("button"), h = d.dataset.target;
-        this.checkRadioAnswers(h, d);
-      });
-    });
-    const a = this.querySelector("#generate-report");
-    a && a.addEventListener("click", () => this.showReportCard());
-    const s = this.querySelector("#reset-book");
-    s && s.addEventListener("click", () => this.resetApp());
-    const p = this.querySelector(".close-report-btn");
-    p && p.addEventListener("click", () => this.hideReportCard()), this.querySelectorAll(".chapter-text, .translation-content").forEach((l) => {
-      l.addEventListener("click", (c) => {
-        const d = c.target.closest(".word");
-        if (d) {
-          let h = this.language;
-          l.classList.contains("translation-content") && !this.isTextSwapped ? h = this.translationLanguage : l.classList.contains("chapter-text") && this.isTextSwapped ? h = this.language : l.classList.contains("translation-content") && this.isTextSwapped && (h = this.translationLanguage), this.playWord(d.innerText, h);
+    }), this.querySelectorAll(".lang-btn").forEach((n) => {
+      n.addEventListener("click", (p) => {
+        const c = n.dataset.swap === "true";
+        if (this.isTextSwapped !== c) {
+          this.cancelTTS();
+          const d = this.language;
+          this.language = this.translationLanguage, this.translationLanguage = d, this.isTextSwapped = c, this.applyLanguageTextSwap(), this.querySelectorAll('button[id^="btn-trans-"][data-action="play"]').forEach((h) => {
+            h.dataset.lang = this.translationLanguage;
+          }), this.selectedVoiceName = null, this._updateVoiceList(), this.querySelectorAll(".lang-btn").forEach((h) => {
+            h.classList.toggle("active", h.dataset.swap === String(this.isTextSwapped));
+          }), this.resetApp(!0);
         }
       });
-    }), this.querySelectorAll(".translation-details").forEach((l) => {
-      l.addEventListener("toggle", (c) => {
-        const d = l.closest(".chapter-card");
-        d && this.handleTranslationToggle(d.id, l.open);
+    });
+    const o = this.querySelector("#voice-btn");
+    o && o.addEventListener("click", () => {
+      this._showVoiceOverlay();
+    });
+    const e = this.querySelector(".close-voice-btn");
+    e && e.addEventListener("click", () => {
+      this._hideVoiceOverlay();
+    });
+    const r = this.querySelector(".voice-overlay");
+    r && r.addEventListener("click", (n) => {
+      n.target === r && this._hideVoiceOverlay();
+    });
+    const a = this.querySelector("#theme-toggle");
+    a && a.addEventListener("click", () => {
+      this.classList.toggle("dark-theme");
+      const n = this.classList.contains("dark-theme"), p = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>', c = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+      a.innerHTML = n ? p : c;
+    }), this.querySelectorAll('button[data-action="play"]').forEach((n) => {
+      n.addEventListener("click", (p) => {
+        const c = p.target.closest("button"), d = c.dataset.target, h = parseFloat(c.dataset.rate);
+        this.playAudio(d, h, c.id);
+      });
+    }), this.querySelectorAll('button[data-action="cancel-tts"]').forEach((n) => {
+      n.addEventListener("click", () => {
+        this.cancelTTS();
+      });
+    }), this.querySelectorAll('button[data-action="check-quiz"]').forEach((n) => {
+      n.addEventListener("click", (p) => {
+        const c = p.target.closest("button"), d = c.dataset.target;
+        this.checkRadioAnswers(d, c);
+      });
+    });
+    const s = this.querySelector("#generate-report");
+    s && s.addEventListener("click", () => this.showReportCard());
+    const i = this.querySelector("#reset-book");
+    i && i.addEventListener("click", () => this.resetApp());
+    const l = this.querySelector(".close-report-btn");
+    l && l.addEventListener("click", () => this.hideReportCard()), this.querySelectorAll(".chapter-text, .translation-content").forEach((n) => {
+      n.addEventListener("click", (p) => {
+        const c = p.target.closest(".word");
+        if (c) {
+          let d = this.language;
+          n.classList.contains("translation-content") && !this.isTextSwapped ? d = this.translationLanguage : n.classList.contains("chapter-text") && this.isTextSwapped ? d = this.language : n.classList.contains("translation-content") && this.isTextSwapped && (d = this.translationLanguage), this.playWord(c.innerText, d);
+        }
+      });
+    }), this.querySelectorAll(".translation-details").forEach((n) => {
+      n.addEventListener("toggle", (p) => {
+        const c = n.closest(".chapter-card");
+        c && this.handleTranslationToggle(c.id, n.open);
       });
     });
   }
@@ -1292,15 +1332,15 @@ class g extends HTMLElement {
     const o = (r) => /[\u0E00-\u0E7F]/.test(r);
     return (Array.isArray(t) ? t : [t]).map((r) => {
       if (r == null) return "";
-      const i = r.replace(/<[^>]*>/g, "");
-      return o(i) ? `<p>${r}</p>` : `<p>${i.split(/(\s+)/).map((s) => /\s+/.test(s) || s === "" ? s : `<span class="word">${s}</span>`).join("")}</p>`;
+      const a = r.replace(/<[^>]*>/g, "");
+      return o(a) ? `<p>${r}</p>` : `<p>${a.split(/(\s+)/).map((l) => /\s+/.test(l) || l === "" ? l : `<span class="word">${l}</span>`).join("")}</p>`;
     }).join("");
   }
   updateIcon(t, o) {
     const e = this.querySelector(`#${t}`);
     if (!e) return;
-    const r = e.querySelector(".icon-wrapper"), i = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', n = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
-    o === "play" ? (r.innerHTML = i, e.classList.remove("playing")) : o === "pause" && (r.innerHTML = n, e.classList.add("playing"));
+    const r = e.querySelector(".icon-wrapper"), a = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', s = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+    o === "play" ? (r.innerHTML = a, e.classList.remove("playing")) : o === "pause" && (r.innerHTML = s, e.classList.add("playing"));
   }
   resetAllButtons() {
     this.querySelectorAll('button[data-action="play"]').forEach((t) => {
@@ -1318,25 +1358,11 @@ class g extends HTMLElement {
     this.querySelectorAll("section.chapter-card").forEach((t) => {
       const o = t.querySelector('.chapter-text[id^="text-"]'), e = t.querySelector('.translation-content[id^="trans-"]');
       if (!o || !e) return;
-      const r = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="main-translation"]' : 'template[data-tj-template="main-original"]'), i = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="trans-original"]' : 'template[data-tj-template="trans-translation"]');
-      r && (o.innerHTML = r.innerHTML), i && (e.innerHTML = i.innerHTML);
+      const r = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="main-translation"]' : 'template[data-tj-template="main-original"]'), a = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="trans-original"]' : 'template[data-tj-template="trans-translation"]');
+      r && (o.innerHTML = r.innerHTML), a && (e.innerHTML = a.innerHTML);
     });
   }
   handleTranslationToggle(t, o) {
-    const e = this.querySelector(`#quiz-${t}`), r = this.querySelector(`#lock-msg-${t}`);
-    if (!(!e || !r) && !(e.classList.contains("quiz-hidden-checked") || e.dataset.checked === "true"))
-      if (this.lockoutTimers.has(t) && (clearInterval(this.lockoutTimers.get(t)), this.lockoutTimers.delete(t)), o)
-        e.classList.add("locked-open"), e.classList.remove("locked-delay"), r.classList.remove("visible");
-      else {
-        e.classList.remove("locked-open"), e.classList.add("locked-delay");
-        let i = 10;
-        const n = r.querySelector(".countdown");
-        n.textContent = i, r.classList.add("visible");
-        const a = setInterval(() => {
-          i--, i <= 0 ? (clearInterval(a), this.lockoutTimers.delete(t), e.classList.remove("locked-delay"), r.classList.remove("visible")) : n.textContent = i;
-        }, 1e3);
-        this.lockoutTimers.set(t, a);
-      }
   }
   playAudio(t, o, e) {
     if (!(this.ttsState.activeElementId === t && this.ttsState.status !== "idle")) {
@@ -1344,11 +1370,11 @@ class g extends HTMLElement {
       return;
     }
     if (this.ttsState.status === "playing") {
-      const i = (() => {
-        const a = this.querySelector(`#${e}`);
-        return a && a.dataset.lang ? a.dataset.lang : this.language;
+      const a = (() => {
+        const i = this.querySelector(`#${e}`);
+        return i && i.dataset.lang ? i.dataset.lang : this.language;
       })();
-      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== i) {
+      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== a) {
         this.cancelTTS(), this.startNewSpeech(t, o, e);
         return;
       }
@@ -1356,11 +1382,11 @@ class g extends HTMLElement {
       return;
     }
     if (this.ttsState.status === "paused") {
-      const i = (() => {
-        const a = this.querySelector(`#${e}`);
-        return a && a.dataset.lang ? a.dataset.lang : this.language;
+      const a = (() => {
+        const i = this.querySelector(`#${e}`);
+        return i && i.dataset.lang ? i.dataset.lang : this.language;
       })();
-      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== i) {
+      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== a) {
         this.cancelTTS(), this.startNewSpeech(t, o, e);
         return;
       }
@@ -1384,13 +1410,13 @@ class g extends HTMLElement {
     this.ttsState.status = "playing", this.ttsState.activeButtonId = e, this.ttsState.activeElementId = t, this.ttsState.activeRate = o, this.updateIcon(e, "pause");
     try {
       this.synth && this.synth.resume();
-    } catch (i) {
-      console.warn("Speech resume() failed:", i);
+    } catch (a) {
+      console.warn("Speech resume() failed:", a);
     }
     window.setTimeout(() => {
       if (this._ttsActionSeq !== r) return;
-      const i = !!(this.synth && this.synth.paused), n = !!(this.synth && this.synth.speaking);
-      this.ttsState.status === "playing" && (i || !n) && this.startNewSpeech(t, o, e);
+      const a = !!(this.synth && this.synth.paused), s = !!(this.synth && this.synth.speaking);
+      this.ttsState.status === "playing" && (a || !s) && this.startNewSpeech(t, o, e);
     }, 650);
   }
   startNewSpeech(t, o, e) {
@@ -1399,23 +1425,23 @@ class g extends HTMLElement {
       this.showTTSError(e);
       return;
     }
-    const i = this.querySelector(`#${t}`);
-    if (!i) return;
-    const n = i.innerText, a = this.querySelector(`#${e}`), s = a && a.dataset.lang ? a.dataset.lang : this.language;
+    const a = this.querySelector(`#${t}`);
+    if (!a) return;
+    const s = a.innerText, i = this.querySelector(`#${e}`), l = i && i.dataset.lang ? i.dataset.lang : this.language;
     this._ttsActionSeq++, this._ttsUtteranceSeq++;
-    const p = this._ttsUtteranceSeq;
-    this.ttsState.status = "playing", this.ttsState.activeButtonId = e, this.ttsState.activeElementId = t, this.ttsState.activeRate = o, this.ttsState.activeLang = s;
+    const n = this._ttsUtteranceSeq;
+    this.ttsState.status = "playing", this.ttsState.activeButtonId = e, this.ttsState.activeElementId = t, this.ttsState.activeRate = o, this.ttsState.activeLang = l;
     try {
-      this.currentUtterance = new SpeechSynthesisUtterance(n);
+      this.currentUtterance = new SpeechSynthesisUtterance(s);
       let c = this.synth.getVoices().find((u) => u.name === this.selectedVoiceName);
-      const d = c ? c.lang.split(/[-_]/)[0].toLowerCase() : null, h = s.split(/[-_]/)[0].toLowerCase();
-      (!c || d !== h) && (c = this._getBestVoice(s)), c && (this.currentUtterance.voice = c), this.currentUtterance.lang = s, this.currentUtterance.rate = o, this.currentUtterance.onend = () => {
-        this._ttsUtteranceSeq === p && (this.updateIcon(e, "play"), this._ttsActionSeq++, this.ttsState.status = "idle", this.ttsState.activeButtonId = null, this.ttsState.activeElementId = null, this.ttsState.activeRate = 1, this.ttsState.activeLang = null, this.currentButtonId = null, this.currentUtterance = null);
+      const d = c ? c.lang.split(/[-_]/)[0].toLowerCase() : null, h = l.split(/[-_]/)[0].toLowerCase();
+      (!c || d !== h) && (c = this._getBestVoice(l)), c && (this.currentUtterance.voice = c), this.currentUtterance.lang = l, this.currentUtterance.rate = o, this.currentUtterance.onend = () => {
+        this._ttsUtteranceSeq === n && (this.updateIcon(e, "play"), this._ttsActionSeq++, this.ttsState.status = "idle", this.ttsState.activeButtonId = null, this.ttsState.activeElementId = null, this.ttsState.activeRate = 1, this.ttsState.activeLang = null, this.currentButtonId = null, this.currentUtterance = null);
       }, this.currentUtterance.onerror = (u) => {
-        this._ttsUtteranceSeq === p && (console.error("Speech error:", u), this.updateIcon(e, "play"), this._ttsActionSeq++, this.ttsState.status = "idle", this.ttsState.activeButtonId = null, this.ttsState.activeElementId = null, this.ttsState.activeRate = 1, this.ttsState.activeLang = null, this.currentButtonId = null, u.error !== "canceled" && u.error !== "interrupted" && this.showTTSError(e));
+        this._ttsUtteranceSeq === n && (console.error("Speech error:", u), this.updateIcon(e, "play"), this._ttsActionSeq++, this.ttsState.status = "idle", this.ttsState.activeButtonId = null, this.ttsState.activeElementId = null, this.ttsState.activeRate = 1, this.ttsState.activeLang = null, this.currentButtonId = null, u.error !== "canceled" && u.error !== "interrupted" && this.showTTSError(e));
       }, this.currentButtonId = e, this.updateIcon(e, "pause"), this.synth.speak(this.currentUtterance);
-    } catch (l) {
-      console.error("Speech synthesis setup error", l), this.showTTSError(e), this.updateIcon(e, "play"), this._ttsActionSeq++, this.ttsState.status = "idle", this.ttsState.activeButtonId = null, this.ttsState.activeElementId = null, this.ttsState.activeRate = 1, this.ttsState.activeLang = null;
+    } catch (p) {
+      console.error("Speech synthesis setup error", p), this.showTTSError(e), this.updateIcon(e, "play"), this._ttsActionSeq++, this.ttsState.status = "idle", this.ttsState.activeButtonId = null, this.ttsState.activeElementId = null, this.ttsState.activeRate = 1, this.ttsState.activeLang = null;
     }
   }
   playWord(t, o) {
@@ -1424,9 +1450,9 @@ class g extends HTMLElement {
     if (!e) return;
     this.synth.cancel();
     const r = new SpeechSynthesisUtterance(e);
-    let n = this.synth.getVoices().find((p) => p.name === this.selectedVoiceName);
-    const a = n ? n.lang.split(/[-_]/)[0].toLowerCase() : null, s = (o || this.language).split(/[-_]/)[0].toLowerCase();
-    (!n || a !== s) && (n = this._getBestVoice(o || this.language)), n && (r.voice = n), r.lang = o || this.language, r.rate = 0.8, this.synth.speak(r);
+    let s = this.synth.getVoices().find((n) => n.name === this.selectedVoiceName);
+    const i = s ? s.lang.split(/[-_]/)[0].toLowerCase() : null, l = (o || this.language).split(/[-_]/)[0].toLowerCase();
+    (!s || i !== l) && (s = this._getBestVoice(o || this.language)), s && (r.voice = s), r.lang = o || this.language, r.rate = 0.8, this.synth.speak(r);
   }
   showTTSError(t) {
     const o = `
@@ -1437,11 +1463,11 @@ class g extends HTMLElement {
             </div>
         `;
     if (t) {
-      const n = this.querySelector(`#${t}`);
-      if (n) {
-        const a = n.closest(".audio-controls");
-        if (a) {
-          a.innerHTML = o;
+      const s = this.querySelector(`#${t}`);
+      if (s) {
+        const i = s.closest(".audio-controls");
+        if (i) {
+          i.innerHTML = o;
           return;
         }
       }
@@ -1465,33 +1491,33 @@ class g extends HTMLElement {
         `;
     const r = e.querySelector("button");
     r.onclick = () => e.remove();
-    const i = this.querySelector(".book-header");
-    i ? i.after(e) : this.prepend(e);
+    const a = this.querySelector(".book-header");
+    a ? a.after(e) : this.prepend(e);
   }
   checkRadioAnswers(t, o) {
-    const e = this.querySelector(`#${t}`), r = e.closest(".chapter-card"), i = e.querySelectorAll(".question-block");
-    let n = 0, a = 0, s = !0;
-    if (i.forEach((c) => {
-      c.querySelector('input[type="radio"]:checked') || (s = !1);
-    }), !s) {
+    const e = this.querySelector(`#${t}`), r = e.closest(".chapter-card"), a = e.querySelectorAll(".question-block");
+    let s = 0, i = 0, l = !0;
+    if (a.forEach((d) => {
+      d.querySelector('input[type="radio"]:checked') || (l = !1);
+    }), !l) {
       alert("Please answer all questions before checking.");
       return;
     }
-    o && (o.disabled = !0, o.textContent = "Checked", o.style.opacity = "0.7", o.style.cursor = "not-allowed"), e.dataset.checked = "true", i.forEach((c) => {
-      const d = c.querySelector('input[type="radio"]:checked'), h = c.querySelector(".feedback");
-      if (c.querySelectorAll('input[type="radio"]').forEach((m) => m.disabled = !0), a++, h.classList.remove("feedback-correct", "feedback-wrong", "feedback-neutral"), d.value === "correct")
-        h.textContent = "Correct !", h.classList.add("feedback-correct"), n++;
+    o && (o.disabled = !0, o.textContent = "Checked", o.style.opacity = "0.7", o.style.cursor = "not-allowed"), e.dataset.checked = "true", a.forEach((d) => {
+      const h = d.querySelector('input[type="radio"]:checked'), u = d.querySelector(".feedback");
+      if (d.querySelectorAll('input[type="radio"]').forEach((m) => m.disabled = !0), i++, u.classList.remove("feedback-correct", "feedback-wrong", "feedback-neutral"), h.value === "correct")
+        u.textContent = "Correct !", u.classList.add("feedback-correct"), s++;
       else {
-        h.textContent = "Incorrect.", h.classList.add("feedback-wrong");
-        const m = r ? r.querySelector(".chapter-title").innerText : "Unknown Chapter", b = c.querySelector(".question-text").innerText;
+        u.textContent = "Incorrect.", u.classList.add("feedback-wrong");
+        const m = r ? r.querySelector(".chapter-title").innerText : "Unknown Chapter", b = d.querySelector(".question-text").innerText;
         this.wrongQuestions.push({
           question: b,
           chapter: m
         });
       }
-    }), this.updateScore(n, a);
-    const p = t.replace("quiz-", ""), l = this.querySelector(`#lock-msg-${p}`);
-    l && (this.lockoutTimers.has(p) && (clearInterval(this.lockoutTimers.get(p)), this.lockoutTimers.delete(p)), l.innerHTML = "Answers will disappear when you scroll past.", l.classList.add("visible"));
+    }), this.updateScore(s, i);
+    const n = t.replace("quiz-", ""), p = this.querySelector(`#lock-msg-${n}`), c = r.querySelector(`#trans-aside-${n}`);
+    c && (c.style.display = "block"), p && (p.innerHTML = "Answers and translation will disappear when you scroll past.", p.classList.add("visible"), p.style.display = "block");
   }
   updateScore(t, o) {
     this.totalScore = (this.totalScore || 0) + t;
@@ -1505,7 +1531,7 @@ class g extends HTMLElement {
       return;
     }
     t.disabled = !0, o.disabled = !0;
-    const i = this.querySelector(".report-overlay"), n = this.querySelector("#report-content"), a = /* @__PURE__ */ new Date(), s = a.toLocaleDateString(), p = a.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), l = this.querySelector(".book-title").innerText, c = this.absoluteTotalQuestions > 0 ? Math.round(this.totalScore / this.absoluteTotalQuestions * 100) : 0;
+    const a = this.querySelector(".report-overlay"), s = this.querySelector("#report-content"), i = /* @__PURE__ */ new Date(), l = i.toLocaleDateString(), n = i.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), p = this.querySelector(".book-title").innerText, c = this.absoluteTotalQuestions > 0 ? Math.round(this.totalScore / this.absoluteTotalQuestions * 100) : 0;
     let d = "";
     this.wrongQuestions.length > 0 ? d = `
                 <div class="report-wrong-list">
@@ -1517,16 +1543,16 @@ class g extends HTMLElement {
                         </div>
                     `).join("")}
                 </div>
-            ` : this.absoluteTotalQuestions > 0 && (d = '<p style="color: #10b981; font-weight: bold; text-align: center; margin-top: 2em;">Excellent! No incorrect answers.</p>'), n.innerHTML = `
+            ` : this.absoluteTotalQuestions > 0 && (d = '<p style="color: #10b981; font-weight: bold; text-align: center; margin-top: 2em;">Excellent! No incorrect answers.</p>'), s.innerHTML = `
             <div class="report-info-grid">
                 <span class="report-info-label">Student:</span>
                 <span>${e}</span>
                 <span class="report-info-label">ID:</span>
                 <span>${r}</span>
                 <span class="report-info-label">Book:</span>
-                <span>${l}</span>
+                <span>${p}</span>
                 <span class="report-info-label">Date:</span>
-                <span>${s} at ${p}</span>
+                <span>${l} at ${n}</span>
             </div>
 
             <div class="report-score-box">
@@ -1536,7 +1562,7 @@ class g extends HTMLElement {
             </div>
 
             ${d}
-        `, i.classList.add("visible");
+        `, a.classList.add("visible");
   }
   hideReportCard() {
     this.querySelector(".report-overlay").classList.remove("visible");
@@ -1546,23 +1572,23 @@ class g extends HTMLElement {
     this.totalScore = 0, this.wrongQuestions = [];
     const o = this.querySelector("#student-name"), e = this.querySelector("#student-id");
     o && (o.disabled = !1, o.value = ""), e && (e.disabled = !1, e.value = "");
-    const r = this.querySelector("#score-tally"), i = this.querySelector("#total-tally");
-    r && (r.textContent = "0"), i && (i.textContent = this.absoluteTotalQuestions), this.querySelectorAll(".chapter-card").forEach((n) => {
-      const a = `quiz-${n.id}`, s = n.querySelector(`#${a}`);
-      if (s) {
-        s.classList.remove("quiz-hidden-checked", "locked-open", "locked-delay"), delete s.dataset.checked;
-        const c = s.querySelector('button[data-action="check-quiz"]');
-        c && (c.disabled = !1, c.textContent = "Check", c.style.opacity = "1", c.style.cursor = "pointer"), s.querySelectorAll('input[type="radio"]').forEach((d) => {
+    const r = this.querySelector("#score-tally"), a = this.querySelector("#total-tally");
+    r && (r.textContent = "0"), a && (a.textContent = this.absoluteTotalQuestions), this.querySelectorAll(".chapter-card").forEach((s) => {
+      const i = `quiz-${s.id}`, l = s.querySelector(`#${i}`);
+      if (l) {
+        l.classList.remove("quiz-hidden-checked", "locked-open", "locked-delay"), delete l.dataset.checked;
+        const c = l.querySelector('button[data-action="check-quiz"]');
+        c && (c.disabled = !1, c.textContent = "Check", c.style.opacity = "1", c.style.cursor = "pointer"), l.querySelectorAll('input[type="radio"]').forEach((d) => {
           d.disabled = !1, d.checked = !1;
-        }), s.querySelectorAll(".feedback").forEach((d) => {
+        }), l.querySelectorAll(".feedback").forEach((d) => {
           d.textContent = "", d.className = "feedback";
         });
       }
-      const p = n.querySelector(".translation-details");
-      p && (p.classList.remove("translation-hidden-checked"), p.open = !1);
-      const l = n.querySelector(".quiz-lock-message");
-      l && (l.classList.remove("visible"), l.textContent = "");
-    }), this.lockoutTimers.forEach((n) => clearInterval(n)), this.lockoutTimers.clear(), window.scrollTo({ top: 0, behavior: "smooth" });
+      const n = s.querySelector(".translation-details");
+      n && (n.classList.remove("translation-hidden-checked"), n.open = !1);
+      const p = s.querySelector(".quiz-lock-message");
+      p && (p.classList.remove("visible"), p.textContent = "");
+    }), this.lockoutTimers.forEach((s) => clearInterval(s)), this.lockoutTimers.clear(), window.scrollTo({ top: 0, behavior: "smooth" });
   }
   disconnectedCallback() {
     this.synth && this.synth.cancel(), this._visibilityObserver && this._visibilityObserver.disconnect();
