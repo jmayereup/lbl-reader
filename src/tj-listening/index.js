@@ -119,10 +119,11 @@ class TjListening extends HTMLElement {
                 <div class="phase-badge">${phaseLabels[this.currentPhase]}</div>
             </div>
             <div class="header-controls">
-                <button id="share-quiz-btn" class="icon-btn" title="Share as Quiz (no transcript)">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <button id="share-quiz-btn" class="share-btn" title="Share as Quiz (no transcript)">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                         <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
                     </svg>
+                    <span>Share Quiz</span>
                 </button>
                 <button id="voice-btn" class="icon-btn" title="Choose Voice">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
@@ -878,8 +879,26 @@ class TjListening extends HTMLElement {
   .role-btn:hover { background-color: #e2e8f0; border-color: #94a3b8; }
   .report-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; transition: background 0.2s; }
   .report-btn:hover { background: #1d4ed8; }
-  .share-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: white; color: #475569; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-  .share-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .share-btn { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 8px 16px; 
+    background: none; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    color: #475569; 
+    transition: all 0.2s; 
+    white-space: nowrap;
+    font-size: 0.9em;
+    font-weight: 600;
+    height: 42px;
+    box-sizing: border-box;
+  }
+  .share-btn:hover { background-color: #f1f5f9; color: #2563eb; border-color: #2563eb; }
+  .share-btn svg { color: #475569; }
+  .share-btn:hover svg { color: #2563eb; }
 
   /* Report Overlay */
   .report-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -931,9 +950,7 @@ class TjListening extends HTMLElement {
       .role-btn { padding: 16px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 8px; transition: all 0.2s; }
       .role-btn:hover { background-color: #e2e8f0; border-color: #94a3b8; }
 
-      .score-actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
-      .share-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 8px; transition: all 0.2s; }
-      .share-btn:hover { background: #1d4ed8; }
+
 
       /* Combined Score */
       .combined-score { margin-top: 30px; padding: 20px 24px; background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%); border: 1px solid #bae6fd; border-radius: 12px; text-align: center; }

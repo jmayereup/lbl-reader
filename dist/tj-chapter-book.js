@@ -981,14 +981,18 @@ class g extends HTMLElement {
   connectedCallback() {
     this.synth && this.synth.onvoiceschanged !== void 0 && (this.synth.onvoiceschanged = () => this._updateVoiceList()), this._initVisibilityObserver();
     const t = this.getAttribute("src");
-    t ? this.loadData(t) : requestAnimationFrame(() => {
-      try {
-        const o = JSON.parse(this.textContent);
-        this.render(o);
-      } catch (o) {
-        console.error("Error parsing inline JSON data", o), this.innerHTML = '<p style="color: red;">Error loading book data: Invalid JSON.</p>';
-      }
+    requestAnimationFrame(() => {
+      this.config ? typeof this.config == "object" ? this.render(this.config) : this._parseAndRender(String(this.config)) : this.hasAttribute("config") ? this._parseAndRender(this.getAttribute("config")) : t ? this.loadData(t) : this.querySelector('script[type="application/json"]') ? this._parseAndRender(this.querySelector('script[type="application/json"]').textContent) : this._parseAndRender(this.textContent);
     });
+  }
+  _parseAndRender(t) {
+    try {
+      if (!t || !t.trim()) return;
+      const o = JSON.parse(t.trim());
+      this.render(o);
+    } catch (o) {
+      console.error("Error parsing inline JSON data", o), this.innerHTML = '<p style="color: red;">Error loading book data: Invalid JSON.</p>';
+    }
   }
   async loadData(t) {
     try {
@@ -1003,14 +1007,14 @@ class g extends HTMLElement {
     const o = this.synth.getVoices();
     if (o.length === 0) return null;
     const e = t.split(/[-_]/)[0].toLowerCase();
-    let r = o.filter((i) => i.lang.toLowerCase() === t.toLowerCase());
-    if (r.length === 0 && (r = o.filter((i) => i.lang.split(/[-_]/)[0].toLowerCase() === e)), r.length === 0) return null;
-    const a = ["natural", "google", "premium", "siri"];
-    for (const i of a) {
-      const l = r.find((n) => n.name.toLowerCase().includes(i));
+    let r = o.filter((a) => a.lang.toLowerCase() === t.toLowerCase());
+    if (r.length === 0 && (r = o.filter((a) => a.lang.split(/[-_]/)[0].toLowerCase() === e)), r.length === 0) return null;
+    const i = ["natural", "google", "premium", "siri"];
+    for (const a of i) {
+      const l = r.find((n) => n.name.toLowerCase().includes(a));
       if (l) return l;
     }
-    return r.find((i) => !i.name.toLowerCase().includes("microsoft")) || r[0];
+    return r.find((a) => !a.name.toLowerCase().includes("microsoft")) || r[0];
   }
   _showVoiceOverlay() {
     const t = this.querySelector(".voice-overlay");
@@ -1024,12 +1028,12 @@ class g extends HTMLElement {
     if (!this.synth) return;
     const t = this.synth.getVoices(), o = this.querySelector(".voice-list"), e = this.querySelector("#voice-btn");
     if (!o || !e || t.length === 0) return;
-    const r = this.language, a = r.split(/[-_]/)[0].toLowerCase(), s = t.filter((l) => l.lang.split(/[-_]/)[0].toLowerCase() === a), i = this._getBestVoice(r);
-    !this.selectedVoiceName && i && (this.selectedVoiceName = i.name), o.innerHTML = "", s.sort((l, n) => l.name.localeCompare(n.name)), s.forEach((l) => {
+    const r = this.language, i = r.split(/[-_]/)[0].toLowerCase(), s = t.filter((l) => l.lang.split(/[-_]/)[0].toLowerCase() === i), a = this._getBestVoice(r);
+    !this.selectedVoiceName && a && (this.selectedVoiceName = a.name), o.innerHTML = "", s.sort((l, n) => l.name.localeCompare(n.name)), s.forEach((l) => {
       const n = document.createElement("button");
       n.classList.add("voice-option-btn"), this.selectedVoiceName === l.name && n.classList.add("active");
       let p = `<span>${l.name}</span>`;
-      i && l.name === i.name && (p += '<span class="badge">Best</span>'), n.innerHTML = p, n.onclick = () => {
+      a && l.name === a.name && (p += '<span class="badge">Best</span>'), n.innerHTML = p, n.onclick = () => {
         this.selectedVoiceName = l.name, this.cancelTTS(), this._updateVoiceList(), this._hideVoiceOverlay();
       }, o.appendChild(n);
     });
@@ -1037,8 +1041,8 @@ class g extends HTMLElement {
   _initVisibilityObserver() {
     this._visibilityObserver = new IntersectionObserver((t) => {
       t.forEach((o) => {
-        const e = o.target, r = e.id, a = e.querySelector(`#quiz-${r}`);
-        !o.isIntersecting && o.boundingClientRect.bottom < 0 && a && a.dataset.checked === "true" && !a.classList.contains("quiz-hidden-checked") && this._hideCheckedQuiz(e, a);
+        const e = o.target, r = e.id, i = e.querySelector(`#quiz-${r}`);
+        !o.isIntersecting && o.boundingClientRect.bottom < 0 && i && i.dataset.checked === "true" && !i.classList.contains("quiz-hidden-checked") && this._hideCheckedQuiz(e, i);
       });
     }, {
       threshold: 0,
@@ -1089,7 +1093,7 @@ class g extends HTMLElement {
             </header>
 
             <div class="chapters-container" translate="no">
-                ${t.chapters ? t.chapters.map((r, a) => this.renderChapter(r, a)).join("") : "<p>No chapters found.</p>"}
+                ${t.chapters ? t.chapters.map((r, i) => this.renderChapter(r, i)).join("") : "<p>No chapters found.</p>"}
             </div>
 
             <footer class="book-footer">
@@ -1172,7 +1176,7 @@ class g extends HTMLElement {
     return !(t.includes("wv") || t.includes("webview") || t.includes("instagram") || t.includes("facebook") || t.includes("line"));
   }
   renderChapter(t, o) {
-    const e = `text-${t.id}`, r = `quiz-${t.id}`, a = `trans-${t.id}`, s = g.chapterHasTranslation(t), i = this.wrapWords(t.content ?? t.text), l = s ? this.wrapWords(t.translation) : "", n = l, p = t.quiz.map((b, f) => `
+    const e = `text-${t.id}`, r = `quiz-${t.id}`, i = `trans-${t.id}`, s = g.chapterHasTranslation(t), a = this.wrapWords(t.content ?? t.text), l = s ? this.wrapWords(t.translation) : "", n = l, p = t.quiz.map((b, f) => `
             <div class="question-block">
                 <p class="question-text">${b.question}</p>
                 ${b.options.map((v) => `
@@ -1217,13 +1221,13 @@ class g extends HTMLElement {
                 
                 ${m}
 
-                <template data-tj-template="main-original">${i}</template>
+                <template data-tj-template="main-original">${a}</template>
                 ${s ? `<template data-tj-template="main-translation">${l}</template>` : ""}
-                <template data-tj-template="trans-original">${i}</template>
+                <template data-tj-template="trans-original">${a}</template>
                 ${s ? `<template data-tj-template="trans-translation">${l}</template>` : ""}
 
                 <div id="${e}" class="chapter-text">
-                    ${this.isTextSwapped && s ? n : i}
+                    ${this.isTextSwapped && s ? n : a}
                 </div>
 
                 ${s ? `
@@ -1234,12 +1238,12 @@ class g extends HTMLElement {
                         <span class="chevron">${u}</span>
                     </summary>
                     <div style="padding: 0.5em 0.75em 0;">
-                        <button data-action="play" data-rate="1.0" data-target="${a}" data-lang="${this.translationLanguage}" id="btn-trans-${t.id}" class="audio-btn audio-btn-normal" style="font-size: 0.8em; padding: 0.25em 0.5em;">
+                        <button data-action="play" data-rate="1.0" data-target="${i}" data-lang="${this.translationLanguage}" id="btn-trans-${t.id}" class="audio-btn audio-btn-normal" style="font-size: 0.8em; padding: 0.25em 0.5em;">
                             <span class="icon-wrapper">${c}</span> Play
                         </button>
                     </div>
-                    <div id="${a}" class="translation-content">
-                        ${this.isTextSwapped ? i : l}
+                    <div id="${i}" class="translation-content">
+                        ${this.isTextSwapped ? a : l}
                     </div>
                 </details>
                 </aside>
@@ -1289,11 +1293,11 @@ class g extends HTMLElement {
     r && r.addEventListener("click", (n) => {
       n.target === r && this._hideVoiceOverlay();
     });
-    const a = this.querySelector("#theme-toggle");
-    a && a.addEventListener("click", () => {
+    const i = this.querySelector("#theme-toggle");
+    i && i.addEventListener("click", () => {
       this.classList.toggle("dark-theme");
       const n = this.classList.contains("dark-theme"), p = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>', c = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-      a.innerHTML = n ? p : c;
+      i.innerHTML = n ? p : c;
     }), this.querySelectorAll('button[data-action="play"]').forEach((n) => {
       n.addEventListener("click", (p) => {
         const c = p.target.closest("button"), d = c.dataset.target, h = parseFloat(c.dataset.rate);
@@ -1311,8 +1315,8 @@ class g extends HTMLElement {
     });
     const s = this.querySelector("#generate-report");
     s && s.addEventListener("click", () => this.showReportCard());
-    const i = this.querySelector("#reset-book");
-    i && i.addEventListener("click", () => this.resetApp());
+    const a = this.querySelector("#reset-book");
+    a && a.addEventListener("click", () => this.resetApp());
     const l = this.querySelector(".close-report-btn");
     l && l.addEventListener("click", () => this.hideReportCard()), this.querySelectorAll(".chapter-text, .translation-content").forEach((n) => {
       n.addEventListener("click", (p) => {
@@ -1333,15 +1337,15 @@ class g extends HTMLElement {
     const o = (r) => /[\u0E00-\u0E7F]/.test(r);
     return (Array.isArray(t) ? t : [t]).map((r) => {
       if (r == null) return "";
-      const a = r.replace(/<[^>]*>/g, "");
-      return o(a) ? `<p>${r}</p>` : `<p>${a.split(/(\s+)/).map((l) => /\s+/.test(l) || l === "" ? l : `<span class="word">${l}</span>`).join("")}</p>`;
+      const i = r.replace(/<[^>]*>/g, "");
+      return o(i) ? `<p>${r}</p>` : `<p>${i.split(/(\s+)/).map((l) => /\s+/.test(l) || l === "" ? l : `<span class="word">${l}</span>`).join("")}</p>`;
     }).join("");
   }
   updateIcon(t, o) {
     const e = this.querySelector(`#${t}`);
     if (!e) return;
-    const r = e.querySelector(".icon-wrapper"), a = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', s = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
-    o === "play" ? (r.innerHTML = a, e.classList.remove("playing")) : o === "pause" && (r.innerHTML = s, e.classList.add("playing"));
+    const r = e.querySelector(".icon-wrapper"), i = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', s = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+    o === "play" ? (r.innerHTML = i, e.classList.remove("playing")) : o === "pause" && (r.innerHTML = s, e.classList.add("playing"));
   }
   resetAllButtons() {
     this.querySelectorAll('button[data-action="play"]').forEach((t) => {
@@ -1359,8 +1363,8 @@ class g extends HTMLElement {
     this.querySelectorAll("section.chapter-card").forEach((t) => {
       const o = t.querySelector('.chapter-text[id^="text-"]'), e = t.querySelector('.translation-content[id^="trans-"]');
       if (!o || !e) return;
-      const r = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="main-translation"]' : 'template[data-tj-template="main-original"]'), a = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="trans-original"]' : 'template[data-tj-template="trans-translation"]');
-      r && (o.innerHTML = r.innerHTML), a && (e.innerHTML = a.innerHTML);
+      const r = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="main-translation"]' : 'template[data-tj-template="main-original"]'), i = t.querySelector(this.isTextSwapped ? 'template[data-tj-template="trans-original"]' : 'template[data-tj-template="trans-translation"]');
+      r && (o.innerHTML = r.innerHTML), i && (e.innerHTML = i.innerHTML);
     });
   }
   handleTranslationToggle(t, o) {
@@ -1371,11 +1375,11 @@ class g extends HTMLElement {
       return;
     }
     if (this.ttsState.status === "playing") {
-      const a = (() => {
-        const i = this.querySelector(`#${e}`);
-        return i && i.dataset.lang ? i.dataset.lang : this.language;
+      const i = (() => {
+        const a = this.querySelector(`#${e}`);
+        return a && a.dataset.lang ? a.dataset.lang : this.language;
       })();
-      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== a) {
+      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== i) {
         this.cancelTTS(), this.startNewSpeech(t, o, e);
         return;
       }
@@ -1383,11 +1387,11 @@ class g extends HTMLElement {
       return;
     }
     if (this.ttsState.status === "paused") {
-      const a = (() => {
-        const i = this.querySelector(`#${e}`);
-        return i && i.dataset.lang ? i.dataset.lang : this.language;
+      const i = (() => {
+        const a = this.querySelector(`#${e}`);
+        return a && a.dataset.lang ? a.dataset.lang : this.language;
       })();
-      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== a) {
+      if (this.ttsState.activeRate !== o || this.ttsState.activeLang !== i) {
         this.cancelTTS(), this.startNewSpeech(t, o, e);
         return;
       }
@@ -1411,13 +1415,13 @@ class g extends HTMLElement {
     this.ttsState.status = "playing", this.ttsState.activeButtonId = e, this.ttsState.activeElementId = t, this.ttsState.activeRate = o, this.updateIcon(e, "pause");
     try {
       this.synth && this.synth.resume();
-    } catch (a) {
-      console.warn("Speech resume() failed:", a);
+    } catch (i) {
+      console.warn("Speech resume() failed:", i);
     }
     window.setTimeout(() => {
       if (this._ttsActionSeq !== r) return;
-      const a = !!(this.synth && this.synth.paused), s = !!(this.synth && this.synth.speaking);
-      this.ttsState.status === "playing" && (a || !s) && this.startNewSpeech(t, o, e);
+      const i = !!(this.synth && this.synth.paused), s = !!(this.synth && this.synth.speaking);
+      this.ttsState.status === "playing" && (i || !s) && this.startNewSpeech(t, o, e);
     }, 650);
   }
   startNewSpeech(t, o, e) {
@@ -1426,9 +1430,9 @@ class g extends HTMLElement {
       this.showTTSError(e);
       return;
     }
-    const a = this.querySelector(`#${t}`);
-    if (!a) return;
-    const s = a.innerText, i = this.querySelector(`#${e}`), l = i && i.dataset.lang ? i.dataset.lang : this.language;
+    const i = this.querySelector(`#${t}`);
+    if (!i) return;
+    const s = i.innerText, a = this.querySelector(`#${e}`), l = a && a.dataset.lang ? a.dataset.lang : this.language;
     this._ttsActionSeq++, this._ttsUtteranceSeq++;
     const n = this._ttsUtteranceSeq;
     this.ttsState.status = "playing", this.ttsState.activeButtonId = e, this.ttsState.activeElementId = t, this.ttsState.activeRate = o, this.ttsState.activeLang = l;
@@ -1452,8 +1456,8 @@ class g extends HTMLElement {
     this.synth.cancel();
     const r = new SpeechSynthesisUtterance(e);
     let s = this.synth.getVoices().find((n) => n.name === this.selectedVoiceName);
-    const i = s ? s.lang.split(/[-_]/)[0].toLowerCase() : null, l = (o || this.language).split(/[-_]/)[0].toLowerCase();
-    (!s || i !== l) && (s = this._getBestVoice(o || this.language)), s && (r.voice = s), r.lang = o || this.language, r.rate = 0.8, this.synth.speak(r);
+    const a = s ? s.lang.split(/[-_]/)[0].toLowerCase() : null, l = (o || this.language).split(/[-_]/)[0].toLowerCase();
+    (!s || a !== l) && (s = this._getBestVoice(o || this.language)), s && (r.voice = s), r.lang = o || this.language, r.rate = 0.8, this.synth.speak(r);
   }
   showTTSError(t) {
     const o = `
@@ -1466,9 +1470,9 @@ class g extends HTMLElement {
     if (t) {
       const s = this.querySelector(`#${t}`);
       if (s) {
-        const i = s.closest(".audio-controls");
-        if (i) {
-          i.innerHTML = o;
+        const a = s.closest(".audio-controls");
+        if (a) {
+          a.innerHTML = o;
           return;
         }
       }
@@ -1492,21 +1496,21 @@ class g extends HTMLElement {
         `;
     const r = e.querySelector("button");
     r.onclick = () => e.remove();
-    const a = this.querySelector(".book-header");
-    a ? a.after(e) : this.prepend(e);
+    const i = this.querySelector(".book-header");
+    i ? i.after(e) : this.prepend(e);
   }
   checkRadioAnswers(t, o) {
-    const e = this.querySelector(`#${t}`), r = e.closest(".chapter-card"), a = e.querySelectorAll(".question-block");
-    let s = 0, i = 0, l = !0;
-    if (a.forEach((d) => {
+    const e = this.querySelector(`#${t}`), r = e.closest(".chapter-card"), i = e.querySelectorAll(".question-block");
+    let s = 0, a = 0, l = !0;
+    if (i.forEach((d) => {
       d.querySelector('input[type="radio"]:checked') || (l = !1);
     }), !l) {
       alert("Please answer all questions before checking.");
       return;
     }
-    o && (o.disabled = !0, o.textContent = "Checked", o.style.opacity = "0.7", o.style.cursor = "not-allowed"), e.dataset.checked = "true", a.forEach((d) => {
+    o && (o.disabled = !0, o.textContent = "Checked", o.style.opacity = "0.7", o.style.cursor = "not-allowed"), e.dataset.checked = "true", i.forEach((d) => {
       const h = d.querySelector('input[type="radio"]:checked'), u = d.querySelector(".feedback");
-      if (d.querySelectorAll('input[type="radio"]').forEach((m) => m.disabled = !0), i++, u.classList.remove("feedback-correct", "feedback-wrong", "feedback-neutral"), h.value === "correct")
+      if (d.querySelectorAll('input[type="radio"]').forEach((m) => m.disabled = !0), a++, u.classList.remove("feedback-correct", "feedback-wrong", "feedback-neutral"), h.value === "correct")
         u.textContent = "Correct !", u.classList.add("feedback-correct"), s++;
       else {
         u.textContent = "Incorrect.", u.classList.add("feedback-wrong");
@@ -1516,7 +1520,7 @@ class g extends HTMLElement {
           chapter: m
         });
       }
-    }), this.updateScore(s, i);
+    }), this.updateScore(s, a);
     const n = t.replace("quiz-", ""), p = this.querySelector(`#lock-msg-${n}`), c = r.querySelector(`#trans-aside-${n}`);
     c && (c.style.display = "block"), p && (p.innerHTML = "Answers and translation will disappear when you scroll past.", p.classList.add("visible"), p.style.display = "block");
   }
@@ -1532,7 +1536,7 @@ class g extends HTMLElement {
       return;
     }
     t.disabled = !0, o.disabled = !0;
-    const a = this.querySelector(".report-overlay"), s = this.querySelector("#report-content"), i = /* @__PURE__ */ new Date(), l = i.toLocaleDateString(), n = i.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), p = this.querySelector(".book-title").innerText, c = this.absoluteTotalQuestions > 0 ? Math.round(this.totalScore / this.absoluteTotalQuestions * 100) : 0;
+    const i = this.querySelector(".report-overlay"), s = this.querySelector("#report-content"), a = /* @__PURE__ */ new Date(), l = a.toLocaleDateString(), n = a.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), p = this.querySelector(".book-title").innerText, c = this.absoluteTotalQuestions > 0 ? Math.round(this.totalScore / this.absoluteTotalQuestions * 100) : 0;
     let d = "";
     this.wrongQuestions.length > 0 ? d = `
                 <div class="report-wrong-list">
@@ -1563,7 +1567,7 @@ class g extends HTMLElement {
             </div>
 
             ${d}
-        `, a.classList.add("visible");
+        `, i.classList.add("visible");
   }
   hideReportCard() {
     this.querySelector(".report-overlay").classList.remove("visible");
@@ -1573,9 +1577,9 @@ class g extends HTMLElement {
     this.totalScore = 0, this.wrongQuestions = [];
     const o = this.querySelector("#student-name"), e = this.querySelector("#student-id");
     o && (o.disabled = !1, o.value = ""), e && (e.disabled = !1, e.value = "");
-    const r = this.querySelector("#score-tally"), a = this.querySelector("#total-tally");
-    r && (r.textContent = "0"), a && (a.textContent = this.absoluteTotalQuestions), this.querySelectorAll(".chapter-card").forEach((s) => {
-      const i = `quiz-${s.id}`, l = s.querySelector(`#${i}`);
+    const r = this.querySelector("#score-tally"), i = this.querySelector("#total-tally");
+    r && (r.textContent = "0"), i && (i.textContent = this.absoluteTotalQuestions), this.querySelectorAll(".chapter-card").forEach((s) => {
+      const a = `quiz-${s.id}`, l = s.querySelector(`#${a}`);
       if (l) {
         l.classList.remove("quiz-hidden-checked", "locked-open", "locked-delay"), delete l.dataset.checked;
         const c = l.querySelector('button[data-action="check-quiz"]');

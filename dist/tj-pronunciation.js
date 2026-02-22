@@ -49,19 +49,29 @@ class f extends HTMLElement {
   }
   connectedCallback() {
     const t = this.getAttribute("src");
-    t ? this.loadData(t) : requestAnimationFrame(() => {
-      try {
-        const e = JSON.parse(this.textContent.trim());
-        this.render(e);
-      } catch (e) {
-        console.error("Error parsing inline JSON data", e), this.shadowRoot.innerHTML = '<p style="color: red;">Error loading pronunciation data: Invalid JSON.</p>';
-      }
+    requestAnimationFrame(() => {
+      let e = "";
+      if (this.config)
+        if (typeof this.config == "object") {
+          this.render(this.config);
+          return;
+        } else
+          e = String(this.config);
+      else this.hasAttribute("config") ? e = this.getAttribute("config") : this.querySelector('script[type="application/json"]') ? e = this.querySelector('script[type="application/json"]').textContent.trim() : t || (e = this.textContent.trim());
+      if (e)
+        try {
+          const a = JSON.parse(e);
+          this.render(a);
+        } catch (a) {
+          console.error("Error parsing inline JSON data", a), this.shadowRoot.innerHTML = '<p style="color: red;">Error loading pronunciation data: Invalid JSON.</p>';
+        }
+      else t && this.loadData(t);
     });
   }
   async loadData(t) {
     try {
-      const i = await (await fetch(t)).json();
-      this.render(i);
+      const a = await (await fetch(t)).json();
+      this.render(a);
     } catch (e) {
       console.error("Error loading pronunciation data:", e), this.shadowRoot.innerHTML = '<p style="color: red;">Error loading pronunciation data.</p>';
     }
@@ -75,8 +85,8 @@ class f extends HTMLElement {
       );
       r.textContent = t.instructions, r.style.display = "block";
     }
-    let i = "";
-    if (t.activities && Array.isArray(t.activities) && (i = t.activities.map((r, s) => this.renderActivity(r, s)).join("")), this.shadowRoot.getElementById("activitiesContainer").innerHTML = i, this.updateProgress(), this.attachEventListeners(), this._updateVoiceList(), !this._shouldShowAudioControls()) {
+    let a = "";
+    if (t.activities && Array.isArray(t.activities) && (a = t.activities.map((r, i) => this.renderActivity(r, i)).join("")), this.shadowRoot.getElementById("activitiesContainer").innerHTML = a, this.updateProgress(), this.attachEventListeners(), this._updateVoiceList(), !this._shouldShowAudioControls()) {
       const r = this.shadowRoot.getElementById("voice-btn");
       r && (r.style.display = "none"), this.checkBrowserSupport();
     }
@@ -98,8 +108,8 @@ class f extends HTMLElement {
     }
   }
   updateProgress() {
-    const t = this.shadowRoot.querySelectorAll(".tj-card[id^='act-']").length, e = this.shadowRoot.querySelectorAll(".tj-card.completed").length, i = this.shadowRoot.querySelector(".progress-text");
-    i && (i.textContent = `${e} / ${t}`);
+    const t = this.shadowRoot.querySelectorAll(".tj-card[id^='act-']").length, e = this.shadowRoot.querySelectorAll(".tj-card.completed").length, a = this.shadowRoot.querySelector(".progress-text");
+    a && (a.textContent = `${e} / ${t}`);
   }
   renderListenRecord(t, e) {
     return `
@@ -160,8 +170,8 @@ class f extends HTMLElement {
 
                     <div class="mp-options">
                         ${t.options.map(
-      (i) => `
-                            <button class="tj-btn tj-btn-secondary mp-option-btn" data-action="mp-guess" data-index="${e}" data-correct="${t.correctAnswer === i}">${i}</button>
+      (a) => `
+                            <button class="tj-btn tj-btn-secondary mp-option-btn" data-action="mp-guess" data-index="${e}" data-correct="${t.correctAnswer === a}">${a}</button>
                         `
     ).join("")}
                     </div>
@@ -173,11 +183,11 @@ class f extends HTMLElement {
   renderScramble(t, e) {
     if (!t.words || !Array.isArray(t.words))
       return `<div class="tj-card"><p>Error: Scramble requires 'words' array.</p></div>`;
-    let i = [...t.words];
-    t.distractors && Array.isArray(t.distractors) && (i = i.concat(t.distractors));
-    for (let r = i.length - 1; r > 0; r--) {
-      const s = Math.floor(Math.random() * (r + 1));
-      [i[r], i[s]] = [i[s], i[r]];
+    let a = [...t.words];
+    t.distractors && Array.isArray(t.distractors) && (a = a.concat(t.distractors));
+    for (let r = a.length - 1; r > 0; r--) {
+      const i = Math.floor(Math.random() * (r + 1));
+      [a[r], a[i]] = [a[i], a[r]];
     }
     return `
             <div class="tj-card" id="act-${e}">
@@ -197,9 +207,9 @@ class f extends HTMLElement {
                     </div>
 
                     <div class="scramble-bank" id="bank-${e}">
-                        ${i.map(
-      (r, s) => `
-                            <div class="scramble-word" data-action="scramble-move" data-index="${e}" data-word-id="${s}">${r}</div>
+                        ${a.map(
+      (r, i) => `
+                            <div class="scramble-word" data-action="scramble-move" data-index="${e}" data-word-id="${i}">${r}</div>
                         `
     ).join("")}
                     </div>
@@ -215,43 +225,43 @@ class f extends HTMLElement {
         `;
   }
   attachEventListeners() {
-    const t = this.shadowRoot.getElementById("voice-btn"), e = this.shadowRoot.getElementById("close-voice-btn"), i = this.shadowRoot.getElementById("voice-overlay");
-    t && (t.onclick = () => this._showVoiceOverlay()), e && (e.onclick = () => this._hideVoiceOverlay()), i && (i.onclick = (r) => {
-      r.target === i && this._hideVoiceOverlay();
+    const t = this.shadowRoot.getElementById("voice-btn"), e = this.shadowRoot.getElementById("close-voice-btn"), a = this.shadowRoot.getElementById("voice-overlay");
+    t && (t.onclick = () => this._showVoiceOverlay()), e && (e.onclick = () => this._hideVoiceOverlay()), a && (a.onclick = (r) => {
+      r.target === a && this._hideVoiceOverlay();
     }), this.shadowRoot.querySelectorAll(".translation-toggle").forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.dataset.index, a = this.shadowRoot.querySelector("#trans-" + o);
-        a.style.display === "none" ? (a.style.display = "block", s.target.textContent = "Hide Translation") : (a.style.display = "none", s.target.textContent = "Show Translation");
+      r.addEventListener("click", (i) => {
+        const o = i.target.dataset.index, s = this.shadowRoot.querySelector("#trans-" + o);
+        s.style.display === "none" ? (s.style.display = "block", i.target.textContent = "Hide Translation") : (s.style.display = "none", i.target.textContent = "Show Translation");
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="play"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.closest("button"), a = o.dataset.text;
-        this.playTTS(a, o);
+      r.addEventListener("click", (i) => {
+        const o = i.target.closest("button"), s = o.dataset.text;
+        this.playTTS(s, o);
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="play-mp"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.closest("button"), a = o.dataset.options.split(","), n = o.dataset.answer;
-        this.playMinimalPairSequence(a, n, o);
+      r.addEventListener("click", (i) => {
+        const o = i.target.closest("button"), s = o.dataset.options.split(","), n = o.dataset.answer;
+        this.playMinimalPairSequence(s, n, o);
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="record"]').forEach((r) => {
-      r.addEventListener("click", async (s) => {
-        const o = s.target.closest("button"), a = o.dataset.index;
-        await this.toggleRecording(o, a);
+      r.addEventListener("click", async (i) => {
+        const o = i.target.closest("button"), s = o.dataset.index;
+        await this.toggleRecording(o, s);
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="playback"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.closest("button");
+      r.addEventListener("click", (i) => {
+        const o = i.target.closest("button");
         if (o.classList.contains("ready")) {
-          const a = o.dataset.index;
-          this.playRecording(a, o);
+          const s = o.dataset.index;
+          this.playRecording(s, o);
         }
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="mp-guess"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.closest("button"), a = o.dataset.correct === "true", n = o.dataset.index, c = this.shadowRoot.querySelector(
+      r.addEventListener("click", (i) => {
+        const o = i.target.closest("button"), s = o.dataset.correct === "true", n = o.dataset.index, c = this.shadowRoot.querySelector(
           "#feedback-" + n
         ), h = o.closest(".mp-options");
-        if (h.querySelectorAll("button").forEach((l) => l.disabled = !0), a) {
+        if (h.querySelectorAll("button").forEach((l) => l.disabled = !0), s) {
           o.classList.add("tj-btn-success"), o.classList.remove("tj-btn-secondary"), c.textContent = "Correct! 🎉", c.className = "feedback-msg correct";
           const l = o.closest(".tj-card");
           l && (l.classList.add("completed"), this.updateProgress());
@@ -261,37 +271,37 @@ class f extends HTMLElement {
           });
       });
     }), this.shadowRoot.querySelectorAll('.scramble-word[data-action="scramble-move"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.dataset.index, a = this.shadowRoot.querySelector("#dropzone-" + o), n = this.shadowRoot.querySelector("#bank-" + o), c = this.shadowRoot.querySelector(
+      r.addEventListener("click", (i) => {
+        const o = i.target.dataset.index, s = this.shadowRoot.querySelector("#dropzone-" + o), n = this.shadowRoot.querySelector("#bank-" + o), c = this.shadowRoot.querySelector(
           "#feedback-" + o
         );
-        c && (c.textContent = "", c.className = "feedback-msg"), a.classList.remove("success"), s.target.parentElement === n ? (a.appendChild(s.target), s.target.classList.add("in-dropzone")) : (n.appendChild(s.target), s.target.classList.remove("in-dropzone"));
+        c && (c.textContent = "", c.className = "feedback-msg"), s.classList.remove("success"), i.target.parentElement === n ? (s.appendChild(i.target), i.target.classList.add("in-dropzone")) : (n.appendChild(i.target), i.target.classList.remove("in-dropzone"));
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="scramble-reset"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.dataset.index, a = this.shadowRoot.querySelector("#dropzone-" + o), n = this.shadowRoot.querySelector("#bank-" + o), c = this.shadowRoot.querySelector(
+      r.addEventListener("click", (i) => {
+        const o = i.target.dataset.index, s = this.shadowRoot.querySelector("#dropzone-" + o), n = this.shadowRoot.querySelector("#bank-" + o), c = this.shadowRoot.querySelector(
           "#feedback-" + o
         );
-        c && (c.textContent = "", c.className = "feedback-msg"), a.classList.remove("success"), a.querySelectorAll(".scramble-word").forEach((l) => {
+        c && (c.textContent = "", c.className = "feedback-msg"), s.classList.remove("success"), s.querySelectorAll(".scramble-word").forEach((l) => {
           n.appendChild(l), l.classList.remove("in-dropzone");
         });
       });
     }), this.shadowRoot.querySelectorAll('button[data-action="scramble-check"]').forEach((r) => {
-      r.addEventListener("click", (s) => {
-        const o = s.target.dataset.index, a = this.shadowRoot.querySelector("#dropzone-" + o), n = this.shadowRoot.querySelector(
+      r.addEventListener("click", (i) => {
+        const o = i.target.dataset.index, s = this.shadowRoot.querySelector("#dropzone-" + o), n = this.shadowRoot.querySelector(
           "#feedback-" + o
         ), h = this.shadowRoot.querySelector(
           "#scramble-ans-" + o
         ).dataset.answer, l = Array.from(
-          a.querySelectorAll(".scramble-word")
+          s.querySelectorAll(".scramble-word")
         ).map((p) => p.textContent), m = l.join(" ");
         if (l.length === 0) {
           n.textContent = "Please construct a sentence first.", n.className = "feedback-msg";
           return;
         }
         if (m === h) {
-          n.textContent = "Correct! 🎉", n.className = "feedback-msg correct", a.classList.add("success");
-          const p = s.target.closest(".tj-card");
+          n.textContent = "Correct! 🎉", n.className = "feedback-msg correct", s.classList.add("success");
+          const p = i.target.closest(".tj-card");
           p && (p.classList.add("completed"), this.updateProgress());
         } else
           n.textContent = "Incorrect. Try again!", n.className = "feedback-msg wrong";
@@ -299,18 +309,18 @@ class f extends HTMLElement {
     });
   }
   playTTS(t, e) {
-    return !this.synth || !this._shouldShowAudioControls() ? Promise.resolve() : new Promise((i, r) => {
+    return !this.synth || !this._shouldShowAudioControls() ? Promise.resolve() : new Promise((a, r) => {
       this.synth.cancel();
-      const s = new SpeechSynthesisUtterance(t);
-      s.lang = this.language, s.rate = 0.9;
-      let a = this.synth.getVoices().find((n) => n.name === this.selectedVoiceName);
-      a || (a = this._getBestVoice(this.language)), a && (s.voice = a), s.onstart = () => {
+      const i = new SpeechSynthesisUtterance(t);
+      i.lang = this.language, i.rate = 0.9;
+      let s = this.synth.getVoices().find((n) => n.name === this.selectedVoiceName);
+      s || (s = this._getBestVoice(this.language)), s && (i.voice = s), i.onstart = () => {
         e.classList.add("playing"), this.isPlaying = !0;
-      }, s.onend = () => {
-        e.classList.remove("playing"), this.isPlaying = !1, i();
-      }, s.onerror = (n) => {
+      }, i.onend = () => {
+        e.classList.remove("playing"), this.isPlaying = !1, a();
+      }, i.onerror = (n) => {
         e.classList.remove("playing"), this.isPlaying = !1, r(n);
-      }, this.synth.speak(s);
+      }, this.synth.speak(i);
     });
   }
   // TTS Guide 1.3 Methods
@@ -318,20 +328,20 @@ class f extends HTMLElement {
     if (!this.synth) return null;
     const e = this.synth.getVoices();
     if (e.length === 0) return null;
-    const i = t.split(/[-_]/)[0].toLowerCase();
+    const a = t.split(/[-_]/)[0].toLowerCase();
     let r = e.filter(
-      (a) => a.lang.toLowerCase() === t.toLowerCase()
+      (s) => s.lang.toLowerCase() === t.toLowerCase()
     );
     if (r.length === 0 && (r = e.filter(
-      (a) => a.lang.split(/[-_]/)[0].toLowerCase() === i
+      (s) => s.lang.split(/[-_]/)[0].toLowerCase() === a
     )), r.length === 0) return null;
-    const s = ["natural", "google", "premium", "siri"];
-    for (const a of s) {
-      const n = r.find((c) => c.name.toLowerCase().includes(a));
+    const i = ["natural", "google", "premium", "siri"];
+    for (const s of i) {
+      const n = r.find((c) => c.name.toLowerCase().includes(s));
       if (n) return n;
     }
     return r.find(
-      (a) => !a.name.toLowerCase().includes("microsoft")
+      (s) => !s.name.toLowerCase().includes("microsoft")
     ) || r[0];
   }
   _showVoiceOverlay() {
@@ -345,14 +355,14 @@ class f extends HTMLElement {
   _updateVoiceList() {
     const t = this.shadowRoot.getElementById("voice-list");
     if (!t) return;
-    const e = this.synth.getVoices(), i = this.language.split(/[-_]/)[0].toLowerCase(), r = e.filter(
-      (o) => o.lang.split(/[-_]/)[0].toLowerCase() === i
-    ), s = this._getBestVoice(this.language);
-    t.innerHTML = "", r.sort((o, a) => o.name.localeCompare(a.name)), r.forEach((o) => {
-      const a = document.createElement("button");
-      a.classList.add("voice-option-btn"), (this.selectedVoiceName === o.name || !this.selectedVoiceName && s && o.name === s.name) && a.classList.add("active"), a.innerHTML = `<span>${o.name}</span>`, s && o.name === s.name && (a.innerHTML += '<span class="badge">Best</span>'), a.onclick = () => {
+    const e = this.synth.getVoices(), a = this.language.split(/[-_]/)[0].toLowerCase(), r = e.filter(
+      (o) => o.lang.split(/[-_]/)[0].toLowerCase() === a
+    ), i = this._getBestVoice(this.language);
+    t.innerHTML = "", r.sort((o, s) => o.name.localeCompare(s.name)), r.forEach((o) => {
+      const s = document.createElement("button");
+      s.classList.add("voice-option-btn"), (this.selectedVoiceName === o.name || !this.selectedVoiceName && i && o.name === i.name) && s.classList.add("active"), s.innerHTML = `<span>${o.name}</span>`, i && o.name === i.name && (s.innerHTML += '<span class="badge">Best</span>'), s.onclick = () => {
         this.selectedVoiceName = o.name, localStorage.setItem("tj-pronunciation-voice", o.name), this._updateVoiceList(), this._hideVoiceOverlay();
-      }, t.appendChild(a);
+      }, t.appendChild(s);
     });
   }
   _shouldShowAudioControls() {
@@ -361,39 +371,39 @@ class f extends HTMLElement {
   }
   _getAndroidIntentLink() {
     if (!/android/i.test(navigator.userAgent)) return "";
-    const i = new URL(window.location.href).toString().replace(/^https?:\/\//, ""), r = window.location.protocol.replace(":", "");
-    return `intent://${i}#Intent;scheme=${r};package=com.android.chrome;end`;
+    const a = new URL(window.location.href).toString().replace(/^https?:\/\//, ""), r = window.location.protocol.replace(":", "");
+    return `intent://${a}#Intent;scheme=${r};package=com.android.chrome;end`;
   }
   checkBrowserSupport() {
     if (!this._shouldShowAudioControls()) {
       const t = this.shadowRoot.getElementById("browser-prompt-overlay");
       if (t) {
         t.classList.add("active");
-        const e = this._getAndroidIntentLink(), i = this.shadowRoot.getElementById("browser-action-btn");
-        e ? (i.href = e, i.textContent = "Open in Chrome") : (i.onclick = (r) => {
-          (!i.href || i.href === "javascript:void(0)") && (r.preventDefault(), alert(
+        const e = this._getAndroidIntentLink(), a = this.shadowRoot.getElementById("browser-action-btn");
+        e ? (a.href = e, a.textContent = "Open in Chrome") : (a.onclick = (r) => {
+          (!a.href || a.href === "javascript:void(0)") && (r.preventDefault(), alert(
             "Please open this page in Safari or Chrome for the best experience with audio features."
           ));
-        }, i.textContent = "Use Safari / Chrome");
+        }, a.textContent = "Use Safari / Chrome");
       }
     }
   }
-  async playMinimalPairSequence(t, e, i) {
-    if (i.classList.contains("playing")) return;
-    const s = i.closest(".mp-container").querySelectorAll(".mp-option-btn");
+  async playMinimalPairSequence(t, e, a) {
+    if (a.classList.contains("playing")) return;
+    const i = a.closest(".mp-container").querySelectorAll(".mp-option-btn");
     try {
       for (let o = 0; o < 2; o++) {
-        for (const a of t) {
-          const n = Array.from(s).find(
-            (c) => c.textContent.trim() === a.trim()
+        for (const s of t) {
+          const n = Array.from(i).find(
+            (c) => c.textContent.trim() === s.trim()
           );
-          n && n.classList.add("highlight"), await this.playTTS(a, i), n && n.classList.remove("highlight"), await new Promise((c) => setTimeout(c, 600));
+          n && n.classList.add("highlight"), await this.playTTS(s, a), n && n.classList.remove("highlight"), await new Promise((c) => setTimeout(c, 600));
         }
-        await new Promise((a) => setTimeout(a, 400));
+        await new Promise((s) => setTimeout(s, 400));
       }
-      await new Promise((o) => setTimeout(o, 500)), await this.playTTS(e, i);
+      await new Promise((o) => setTimeout(o, 500)), await this.playTTS(e, a);
     } catch (o) {
-      console.error("Audio sequence error:", o), i.classList.remove("playing"), s.forEach((a) => a.classList.remove("highlight"));
+      console.error("Audio sequence error:", o), a.classList.remove("playing"), i.forEach((s) => s.classList.remove("highlight"));
     }
   }
   async toggleRecording(t, e) {
@@ -401,37 +411,37 @@ class f extends HTMLElement {
       this.mediaRecorder && this.mediaRecorder.state !== "inactive" && this.mediaRecorder.stop(), t.classList.remove("recording");
     else
       try {
-        const i = await navigator.mediaDevices.getUserMedia({
+        const a = await navigator.mediaDevices.getUserMedia({
           audio: !0
         });
-        this.audioChunks = [], this.mediaRecorder = new MediaRecorder(i), this.mediaRecorder.ondataavailable = (r) => {
+        this.audioChunks = [], this.mediaRecorder = new MediaRecorder(a), this.mediaRecorder.ondataavailable = (r) => {
           r.data.size > 0 && this.audioChunks.push(r.data);
         }, this.mediaRecorder.onstop = () => {
-          const r = new Blob(this.audioChunks, { type: "audio/webm" }), s = URL.createObjectURL(r);
-          this.recordings.has(e) && URL.revokeObjectURL(this.recordings.get(e)), this.recordings.set(e, s);
+          const r = new Blob(this.audioChunks, { type: "audio/webm" }), i = URL.createObjectURL(r);
+          this.recordings.has(e) && URL.revokeObjectURL(this.recordings.get(e)), this.recordings.set(e, i);
           const o = this.shadowRoot.querySelector(
             `#playback-${e}`
           );
           o && o.classList.add("ready");
-          const a = t.closest(".tj-card");
-          a && !a.classList.contains("completed") && (a.classList.add("completed"), this.updateProgress()), i.getTracks().forEach((n) => n.stop());
+          const s = t.closest(".tj-card");
+          s && !s.classList.contains("completed") && (s.classList.add("completed"), this.updateProgress()), a.getTracks().forEach((n) => n.stop());
         }, this.mediaRecorder.start(), t.classList.add("recording");
-      } catch (i) {
-        console.error("Error accessing microphone:", i), alert(
+      } catch (a) {
+        console.error("Error accessing microphone:", a), alert(
           "Could not access microphone. Please ensure you have granted permission."
         );
       }
   }
   playRecording(t, e) {
-    const i = this.recordings.get(t);
-    if (!i) return;
-    const r = new Audio(i);
+    const a = this.recordings.get(t);
+    if (!a) return;
+    const r = new Audio(a);
     r.onplay = () => {
       e.classList.add("playing");
     }, r.onended = () => {
       e.classList.remove("playing");
-    }, r.play().catch((s) => {
-      console.error("Error playing recording:", s), e.classList.remove("playing");
+    }, r.play().catch((i) => {
+      console.error("Error playing recording:", i), e.classList.remove("playing");
     });
   }
 }

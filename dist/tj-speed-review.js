@@ -9,15 +9,15 @@ class n extends HTMLElement {
       this.loadData(), this.render();
     });
   }
-  loadLibrary(e, i, s) {
+  loadLibrary(e, t, i) {
     if (window[e]) {
-      s && s();
+      i && i();
       return;
     }
-    const t = document.createElement("script");
-    t.src = i, t.async = !0, t.onload = () => {
-      s && s(), this.render();
-    }, document.head.appendChild(t);
+    const s = document.createElement("script");
+    s.src = t, s.async = !0, s.onload = () => {
+      i && i(), this.render();
+    }, document.head.appendChild(s);
   }
   initAudio() {
     window.Tone && !this.audioInitialized && (this.synthCorrect = new window.Tone.Synth().toDestination(), this.synthIncorrect = new window.Tone.Synth({ oscillator: { type: "square" } }).toDestination(), this.audioInitialized = !0);
@@ -27,27 +27,36 @@ class n extends HTMLElement {
   }
   loadData() {
     try {
-      const e = this.querySelector('script[type="application/json"]');
-      let i = e ? e.textContent : this.textContent.trim();
-      if (!i) return;
-      const s = i.replace(/"((?:\\.|[^"\\])*)"/gs, (r, o) => '"' + o.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"');
-      let t = JSON.parse(s);
-      Array.isArray(t) && (t = t[0]), t.title && (this.title = t.title), t.questions && (this.questions = t.questions), this.innerHTML = "";
+      let e = "";
+      if (this.config)
+        if (typeof this.config == "object") {
+          this._processParsedData(this.config);
+          return;
+        } else
+          e = String(this.config);
+      else this.hasAttribute("config") ? e = this.getAttribute("config") : this.querySelector('script[type="application/json"]') ? e = this.querySelector('script[type="application/json"]').textContent.trim() : e = this.textContent.trim();
+      if (!e) return;
+      const t = e.replace(/"((?:\\.|[^"\\])*)"/gs, (s, r) => '"' + r.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"');
+      let i = JSON.parse(t);
+      this._processParsedData(i), this.innerHTML = "";
     } catch (e) {
       console.error("Failed to parse JSON for tj-speed-review", e), this.shadowRoot.innerHTML = '<div class="error-msg">Error loading quiz data. Check console.</div>';
     }
+  }
+  _processParsedData(e) {
+    Array.isArray(e) && (e = e[0]), e.title && (this.title = e.title), e.questions && (this.questions = e.questions);
   }
   parseMD(e) {
     return window.marked && e ? window.marked.parse(e) : e || "";
   }
   startGame() {
     if (!this.identityLocked) {
-      const i = this.shadowRoot.querySelector("#nickname"), s = this.shadowRoot.querySelector("#student-number"), t = i ? i.value.trim() : "", r = s ? s.value.trim() : "";
-      if (!t || !r) {
+      const t = this.shadowRoot.querySelector("#nickname"), i = this.shadowRoot.querySelector("#student-number"), s = t ? t.value.trim() : "", r = i ? i.value.trim() : "";
+      if (!s || !r) {
         alert("Please enter both nickname and student number to begin.");
         return;
       }
-      this.nickname = t, this.studentNumber = r, this.identityLocked = !0;
+      this.nickname = s, this.studentNumber = r, this.identityLocked = !0;
     }
     this.score = 0, this.currentIndex = 0;
     const e = [...this.questions].sort(() => 0.5 - Math.random());
@@ -66,8 +75,8 @@ class n extends HTMLElement {
   updateTimerBar() {
     const e = this.shadowRoot.querySelector(".timer-inner");
     if (e) {
-      const i = this.timeLeft / this.timeLimit * 100;
-      e.style.width = `${i}%`, this.timeLeft < 5 ? e.style.background = "#ef4444" : e.style.background = "#22d3ee";
+      const t = this.timeLeft / this.timeLimit * 100;
+      e.style.width = `${t}%`, this.timeLeft < 5 ? e.style.background = "#ef4444" : e.style.background = "#22d3ee";
     }
   }
   handleTimeout() {
@@ -78,13 +87,13 @@ class n extends HTMLElement {
   async selectAnswer(e) {
     if (this.isAnswered) return;
     clearInterval(this.timerInterval), this.isAnswered = !0, this.userAnswer = e;
-    const i = this.currentPool[this.currentIndex];
-    if (e === i.answer) {
+    const t = this.currentPool[this.currentIndex];
+    if (e === t.answer) {
       this.isCorrect = !0;
-      const s = Math.max(10, Math.round(this.timeLeft * 10));
-      this.score += s, this.feedbackText = `+${s} points!`, this.feedbackExplanation = i.explanation || "Perfect!", this.playSound("correct");
+      const i = Math.max(10, Math.round(this.timeLeft * 10));
+      this.score += i, this.feedbackText = `+${i} points!`, this.feedbackExplanation = t.explanation || "Perfect!", this.playSound("correct");
     } else
-      this.isCorrect = !1, this.feedbackText = "Not quite!", this.feedbackExplanation = i.explanation || `The correct answer was **${i.answer}**.`, this.playSound("incorrect");
+      this.isCorrect = !1, this.feedbackText = "Not quite!", this.feedbackExplanation = t.explanation || `The correct answer was **${t.answer}**.`, this.playSound("incorrect");
     this.render();
   }
   nextQuestion() {
@@ -347,9 +356,9 @@ class n extends HTMLElement {
         }
       </style>
     `;
-    let i = "";
+    let t = "";
     if (this.gameState === "start")
-      i = `
+      t = `
         <div class="start-screen">
           <h1>${this.title} 🏎️</h1>
           <p>Think fast! Points based on speed.</p>
@@ -376,8 +385,8 @@ class n extends HTMLElement {
         </div>
       `;
     else if (this.gameState === "playing") {
-      const s = this.currentPool[this.currentIndex];
-      i = `
+      const i = this.currentPool[this.currentIndex];
+      t = `
         <div class="header">
           <div class="title-area">
             <h1>${this.title}</h1>
@@ -394,13 +403,13 @@ class n extends HTMLElement {
           <div class="timer-inner" style="width: ${this.timeLeft / this.timeLimit * 100}%"></div>
         </div>
 
-        <div class="question-meta">Question ${this.currentIndex + 1} / ${this.currentPool.length} — ${s.category || ""}</div>
-        <div class="question-text">${s.question}</div>
+        <div class="question-meta">Question ${this.currentIndex + 1} / ${this.currentPool.length} — ${i.category || ""}</div>
+        <div class="question-text">${i.question}</div>
 
         <div class="options-grid">
-          ${this.shuffledOptions.map((t) => {
+          ${this.shuffledOptions.map((s) => {
         let r = "option-btn";
-        return this.isAnswered && (t === s.answer ? r += " correct" : t === this.userAnswer && (r += " incorrect")), `<button class="${r}" ${this.isAnswered ? "disabled" : ""} onclick="this.getRootNode().host.selectAnswer('${t.replace(/'/g, "\\'")}')">${t}</button>`;
+        return this.isAnswered && (s === i.answer ? r += " correct" : s === this.userAnswer && (r += " incorrect")), `<button class="${r}" ${this.isAnswered ? "disabled" : ""} onclick="this.getRootNode().host.selectAnswer('${s.replace(/'/g, "\\'")}')">${s}</button>`;
       }).join("")}
         </div>
 
@@ -414,7 +423,7 @@ class n extends HTMLElement {
           </div>
         ` : ""}
       `;
-    } else this.gameState === "gameover" && (i = `
+    } else this.gameState === "gameover" && (t = `
         <div class="end-screen">
           <h1>Quiz Complete!</h1>
           <div class="result-identity">
@@ -430,7 +439,7 @@ class n extends HTMLElement {
     this.shadowRoot.innerHTML = `
       ${e}
       <div class="container">
-        ${i}
+        ${t}
       </div>
     `;
   }

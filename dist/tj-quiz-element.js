@@ -105,7 +105,7 @@ class A extends HTMLElement {
   }
   connectedCallback() {
     requestAnimationFrame(() => {
-      if (this.originalContent = this.textContent, this.hasAttribute("submission-url") && (this.submissionUrl = this.getAttribute("submission-url")), this.loadTemplate(), this.setAttribute("translate", "no"), !this._shouldShowAudioControls()) {
+      if (this.config ? typeof this.config == "object" ? this.originalContent = JSON.stringify(this.config) : this.originalContent = String(this.config) : this.hasAttribute("config") ? this.originalContent = this.getAttribute("config") : this.querySelector('script[type="text/markdown"]') ? this.originalContent = this.querySelector('script[type="text/markdown"]').textContent : this.querySelector('script[type="application/json"]') ? this.originalContent = this.querySelector('script[type="application/json"]').textContent : this.originalContent = this.textContent, this.hasAttribute("submission-url") && (this.submissionUrl = this.getAttribute("submission-url")), this.loadTemplate(), this.setAttribute("translate", "no"), !this._shouldShowAudioControls()) {
         const t = this.shadowRoot.getElementById("voice-btn");
         t && t.classList.add("hidden");
       }

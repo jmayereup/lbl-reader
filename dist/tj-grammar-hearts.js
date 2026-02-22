@@ -19,16 +19,24 @@ class n extends HTMLElement {
   }
   loadData() {
     try {
-      const e = this.querySelector('script[type="application/json"]');
-      let t = e ? e.textContent : this.textContent.trim();
-      if (!t)
-        return;
-      const r = t.replace(/"((?:\\.|[^"\\])*)"/gs, (i, o) => '"' + o.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"');
-      let s = JSON.parse(r);
-      Array.isArray(s) && (s = s[0]), s.title && (this.title = s.title), s.hint && (this.grammarHint = s.hint), s.questions && Array.isArray(s.questions) && (this.questions = s.questions), this.prepRound(), this.innerHTML = "";
+      let e = "";
+      if (this.config)
+        if (typeof this.config == "object") {
+          this._processParsedData(this.config);
+          return;
+        } else
+          e = String(this.config);
+      else this.hasAttribute("config") ? e = this.getAttribute("config") : this.querySelector('script[type="application/json"]') ? e = this.querySelector('script[type="application/json"]').textContent.trim() : e = this.textContent.trim();
+      if (!e) return;
+      const t = e.replace(/"((?:\\.|[^"\\])*)"/gs, (r, i) => '"' + i.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"');
+      let s = JSON.parse(t);
+      this._processParsedData(s), this.innerHTML = "";
     } catch (e) {
       console.error("Failed to parse JSON for grammar-hearts", e), this.shadowRoot.innerHTML = '<div class="error-msg">Error loading grammar data. Please ensure your JSON is correctly formatted.</div>';
     }
+  }
+  _processParsedData(e) {
+    Array.isArray(e) && (e = e[0]), e.title && (this.title = e.title), e.hint && (this.grammarHint = e.hint), e.questions && Array.isArray(e.questions) && (this.questions = e.questions), this.prepRound();
   }
   // Simple Markdown-to-HTML helper (or use a library)
   // Since the user asked for a 3rd party tool, I'll use Marked.js
@@ -48,22 +56,22 @@ class n extends HTMLElement {
   handleAnswer(e) {
     if (this.isAnswered) return;
     const t = this.currentPool[this.currentIndex];
-    let r = !1;
+    let s = !1;
     if (t.type === "multiple-choice")
-      r = e === t.correctIndex;
+      s = e === t.correctIndex;
     else if (t.type === "fill-in-the-blank") {
-      const s = this._normalizeText(e);
-      Array.isArray(t.answer) ? r = t.answer.some((i) => this._normalizeText(i) === s) : typeof t.answer == "string" && (r = s === this._normalizeText(t.answer));
+      const r = this._normalizeText(e);
+      Array.isArray(t.answer) ? s = t.answer.some((i) => this._normalizeText(i) === r) : typeof t.answer == "string" && (s = r === this._normalizeText(t.answer));
     } else if (t.type === "scramble") {
-      const s = this._normalizeText(t.sentence);
-      r = this._normalizeText(e) === s;
+      const r = this._normalizeText(t.sentence);
+      s = this._normalizeText(e) === r;
     }
-    if (this.isAnswered = !0, this.isCorrect = r, r)
+    if (this.isAnswered = !0, this.isCorrect = s, s)
       this.score++, this.answerFeedback = "Correct!", this.answerExplanation = t.explanation || "Great job!";
     else {
       this.hearts--, this.answerFeedback = "Oops!", this.answerExplanation = t.explanation || "Not quite right.", this.hearts <= 0;
-      const s = this.shadowRoot.querySelector(".card");
-      s && (s.classList.add("shake"), setTimeout(() => s.classList.remove("shake"), 500));
+      const r = this.shadowRoot.querySelector(".card");
+      r && (r.classList.add("shake"), setTimeout(() => r.classList.remove("shake"), 500));
     }
     this.render();
   }
@@ -442,7 +450,7 @@ class n extends HTMLElement {
         </div>
       `;
     else if (this.gameState === "playing") {
-      const r = this.currentPool[this.currentIndex];
+      const s = this.currentPool[this.currentIndex];
       t = `
         <div class="header">
           <div style="font-weight: 600; color: #64748b;">
@@ -450,16 +458,16 @@ class n extends HTMLElement {
           </div>
           <div class="score-display">Score: ${this.score}</div>
           <div class="hearts">
-            ${Array.from({ length: this.maxHearts }).map((s, i) => `
+            ${Array.from({ length: this.maxHearts }).map((r, i) => `
               <span class="heart ${i < this.maxHearts - this.hearts ? "lost" : ""}">❤️</span>
             `).join("")}
           </div>
         </div>
 
         <div class="card ${this.isAnswered ? "answered" : ""}">
-          <div class="instruction">${this.getInstruction(r)}</div>
-          ${this.renderMainText(r)}
-          ${this.renderQuestion(r)}
+          <div class="instruction">${this.getInstruction(s)}</div>
+          ${this.renderMainText(s)}
+          ${this.renderQuestion(s)}
           
           ${this.isAnswered ? `
             <div class="feedback-box ${this.isCorrect ? "success" : "error"}">
@@ -514,22 +522,22 @@ class n extends HTMLElement {
         ${t}
       </div>
     `, setTimeout(() => {
-      const r = this.shadowRoot.querySelector("#fib-answer");
-      r && r.focus();
+      const s = this.shadowRoot.querySelector("#fib-answer");
+      s && s.focus();
     }, 0);
   }
   renderMainText(e) {
     let t = e.question || (e.type === "multiple-choice" || e.type === "scramble" ? "" : "___");
     if (e.type === "scramble" && this.isAnswered ? t = e.sentence : e.type !== "scramble" && (t = e.question || e.sentence || (e.type === "multiple-choice" ? "" : "___")), !t) return "";
-    const r = e.type === "fill-in-the-blank" ? t.replace("___", '<span style="text-decoration: underline; font-weight: 700;">' + (this.isAnswered ? Array.isArray(e.answer) ? e.answer.join(" / ") : e.answer : "______") + "</span>") : t;
-    return `<h2>${this.parseMD(r)}</h2>`;
+    const s = e.type === "fill-in-the-blank" ? t.replace("___", '<span style="text-decoration: underline; font-weight: 700;">' + (this.isAnswered ? Array.isArray(e.answer) ? e.answer.join(" / ") : e.answer : "______") + "</span>") : t;
+    return `<h2>${this.parseMD(s)}</h2>`;
   }
   renderQuestion(e) {
     if (!e) return '<div class="error-msg">Missing question data.</div>';
     if (e.type === "multiple-choice")
-      return e.options.map((t, r) => {
-        let s = "option-btn";
-        return this.isAnswered && (r === e.correctIndex ? s += " success" : this.userAnswer === r && !this.isCorrect && (s += " error")), `<button class="${s}" ${this.isAnswered ? "disabled" : ""} onclick="this.getRootNode().host.handleMultipleChoice(${r})">${t}</button>`;
+      return e.options.map((t, s) => {
+        let r = "option-btn";
+        return this.isAnswered && (s === e.correctIndex ? r += " success" : this.userAnswer === s && !this.isCorrect && (r += " error")), `<button class="${r}" ${this.isAnswered ? "disabled" : ""} onclick="this.getRootNode().host.handleMultipleChoice(${s})">${t}</button>`;
       }).join("");
     if (e.type === "fill-in-the-blank")
       return `
@@ -544,16 +552,16 @@ class n extends HTMLElement {
         ${this.isAnswered ? "" : `<button class="btn" onclick="this.getRootNode().host.handleAnswer(this.parentElement.querySelector('#fib-answer').value)">Submit</button>`}
       `;
     if (e.type === "scramble") {
-      const r = (e.sentence || e.question || "").trim().split(/\s+/);
-      return this.scrambledWords.length === 0 && (this.scrambledWords = [...r].sort(() => 0.5 - Math.random())), `
+      const s = (e.sentence || e.question || "").trim().split(/\s+/);
+      return this.scrambledWords.length === 0 && (this.scrambledWords = [...s].sort(() => 0.5 - Math.random())), `
         <div class="scramble-target" style="${this.isAnswered ? "border-style: solid; border-color: " + (this.isCorrect ? "#10b981" : "#ef4444") : ""}">
-          ${this.selectedScrambleIndices.map((s, i) => `
-            <button class="scramble-token" ${this.isAnswered ? "disabled" : ""} onclick="this.getRootNode().host.unpickWord(${i})">${this.scrambledWords[s]}</button>
+          ${this.selectedScrambleIndices.map((r, i) => `
+            <button class="scramble-token" ${this.isAnswered ? "disabled" : ""} onclick="this.getRootNode().host.unpickWord(${i})">${this.scrambledWords[r]}</button>
           `).join("")}
         </div>
         ${this.isAnswered ? "" : `
           <div class="scramble-pool">
-            ${this.scrambledWords.map((s, i) => this.selectedScrambleIndices.includes(i) ? "" : `<button class="scramble-token" onclick="this.getRootNode().host.pickWord(${i})">${s}</button>`).join("")}
+            ${this.scrambledWords.map((r, i) => this.selectedScrambleIndices.includes(i) ? "" : `<button class="scramble-token" onclick="this.getRootNode().host.pickWord(${i})">${r}</button>`).join("")}
           </div>
           <div style="display: flex; gap: 0.5em;">
               <button class="btn" style="flex: 1; background: #64748b;" onclick="this.getRootNode().host.resetScramble()">Reset</button>
