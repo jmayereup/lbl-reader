@@ -1,6 +1,6 @@
-var u = Object.defineProperty;
-var f = (h, e, t) => e in h ? u(h, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : h[e] = t;
-var g = (h, e, t) => f(h, typeof e != "symbol" ? e + "" : e, t);
+var f = Object.defineProperty;
+var u = (h, e, t) => e in h ? f(h, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : h[e] = t;
+var g = (h, e, t) => u(h, typeof e != "symbol" ? e + "" : e, t);
 const p = class p extends HTMLElement {
   constructor() {
     super(), this.attachShadow({ mode: "open" }), this.lessonData = null, this.currentPhase = 0, this.score = 0, this.answeredCount = 0, this.totalQuestions = 0, this.isCompleted = !1, this.studentInfo = { nickname: "", number: "" }, this.selectedVoiceName = null, this.isPlaying = !1, this._currentAudioEl = null;
@@ -9,15 +9,24 @@ const p = class p extends HTMLElement {
   }
   connectedCallback() {
     requestAnimationFrame(() => {
-      var t, o;
-      const e = this.textContent.trim();
-      this.textContent = "";
+      let e = "";
+      if (this.config)
+        if (typeof this.config == "object") {
+          this.lessonData = this.config, this._initDataAndRender();
+          return;
+        } else
+          e = String(this.config);
+      else this.hasAttribute("config") ? e = this.getAttribute("config") : this.querySelector('script[type="application/json"]') ? e = this.querySelector('script[type="application/json"]').textContent.trim() : (e = this.textContent.trim(), this.textContent = "");
       try {
-        this.lessonData = JSON.parse(e), this.totalQuestions = ((o = (t = this.lessonData.listening) == null ? void 0 : t.questions) == null ? void 0 : o.length) || 0, this.render(), this._updateVoiceList(), setTimeout(() => this._updateVoiceList(), 500), setTimeout(() => this._updateVoiceList(), 1500);
-      } catch (n) {
-        this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${n.message}</p>`;
+        e && (this.lessonData = JSON.parse(e), this._initDataAndRender());
+      } catch (t) {
+        this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${t.message}</p>`;
       }
     });
+  }
+  _initDataAndRender() {
+    var e, t;
+    this.totalQuestions = ((t = (e = this.lessonData.listening) == null ? void 0 : e.questions) == null ? void 0 : t.length) || 0, this.render(), this._updateVoiceList(), setTimeout(() => this._updateVoiceList(), 500), setTimeout(() => this._updateVoiceList(), 1500);
   }
   _getLang() {
     var e;
@@ -30,7 +39,7 @@ const p = class p extends HTMLElement {
     const e = this.lessonData, t = ["Introduction", "Vocabulary", "Listening"];
     let o = "";
     this.currentPhase === 0 ? o = this._renderIntroPhase() : this.currentPhase === 1 ? o = this._renderVocabPhase() : o = this._renderListeningPhase();
-    const n = `
+    const s = `
       <style>${this.getBaseStyles()}</style>
       <div class="container">
         <div class="header-row">
@@ -55,12 +64,12 @@ const p = class p extends HTMLElement {
 
         <!-- Phase Progress Dots -->
         <div class="phase-dots">
-            ${t.map((r, s) => `
-                <div class="phase-dot-group ${s === this.currentPhase ? "active" : ""} ${s < this.currentPhase ? "completed" : ""}">
-                    <div class="phase-dot">${s < this.currentPhase ? "✓" : s + 1}</div>
+            ${t.map((r, n) => `
+                <div class="phase-dot-group ${n === this.currentPhase ? "active" : ""} ${n < this.currentPhase ? "completed" : ""}">
+                    <div class="phase-dot">${n < this.currentPhase ? "✓" : n + 1}</div>
                     <span class="phase-dot-label">${r}</span>
                 </div>
-                ${s < t.length - 1 ? '<div class="phase-dot-line"></div>' : ""}
+                ${n < t.length - 1 ? '<div class="phase-dot-line"></div>' : ""}
             `).join("")}
         </div>
 
@@ -92,7 +101,7 @@ const p = class p extends HTMLElement {
         </div>
       </div>
     `;
-    this.shadowRoot.innerHTML = n, this._attachListeners();
+    this.shadowRoot.innerHTML = s, this._attachListeners();
   }
   // ─── PHASE RENDERERS ───────────────────────────────────
   _renderIntroPhase() {
@@ -119,7 +128,7 @@ const p = class p extends HTMLElement {
                 Review the vocabulary before listening. Tap the speaker to hear each word.
             </div>
             <div class="vocab-grid">
-                ${e.map((o, n) => `
+                ${e.map((o, s) => `
             <div class="vocab-card">
                 <div class="vocab-header">
                     <h3 class="vocab-word">${o.word}</h3>
@@ -152,8 +161,8 @@ const p = class p extends HTMLElement {
                     <span>Play Dialogue</span>
                 </button>
             `;
-    let n = "";
-    e.transcript && !this.isQuizMode && (n = `
+    let s = "";
+    e.transcript && !this.isQuizMode && (s = `
                 <div class="transcript-box">
                     <div class="transcript-header">
                         <span class="transcript-label">Transcript</span>
@@ -166,18 +175,18 @@ const p = class p extends HTMLElement {
                 </div>
             `);
     let r = "";
-    return e.questions && e.questions.length > 0 && (r = e.questions.map((s, i) => {
-      const a = `q_${i}`, d = s.options.map((c, l) => `
+    return e.questions && e.questions.length > 0 && (r = e.questions.map((n, i) => {
+      const a = `q_${i}`, d = n.options.map((c, l) => `
                     <label class="mc-option" id="label_${a}_${l}">
-                        <input type="radio" name="${a}" value="${c}" data-correct="${s.correct}" data-label-id="label_${a}_${l}">
+                        <input type="radio" name="${a}" value="${c}" data-correct="${n.correct}" data-label-id="label_${a}_${l}">
                         ${c}
                     </label>
                 `).join("");
       return `
                     <div class="question-card">
                         <div class="question-header">
-                            <p class="question-text"><strong>Q${i + 1}.</strong> ${s.question}</p>
-                            <button class="tts-btn" data-text="${s.question}" title="Listen to question">
+                            <p class="question-text"><strong>Q${i + 1}.</strong> ${n.question}</p>
+                            <button class="tts-btn" data-text="${n.question}" title="Listen to question">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                     <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                                 </svg>
@@ -197,7 +206,7 @@ const p = class p extends HTMLElement {
                     Listen to the dialogue, then answer the comprehension questions below.
                 </div>
                 ${o}
-                ${n}
+                ${s}
                 <div class="section-title">Comprehension Questions</div>
                 ${r}
                 <div id="footer-actions" class="footer-actions" style="display: ${this.answeredCount === this.totalQuestions && this.totalQuestions > 0 ? "flex" : "none"}">
@@ -216,8 +225,8 @@ const p = class p extends HTMLElement {
     }, this.shadowRoot.querySelectorAll(".tts-btn, .vocab-play-btn").forEach((i) => {
       i.onclick = () => this._playTTS(i.getAttribute("data-text"));
     });
-    const n = this.shadowRoot.getElementById("listening-play-btn");
-    n && (n.onclick = () => {
+    const s = this.shadowRoot.getElementById("listening-play-btn");
+    s && (s.onclick = () => {
       var a;
       const i = ((a = this.lessonData.listening) == null ? void 0 : a.transcript) || "";
       this._playTTS(i);
@@ -227,8 +236,8 @@ const p = class p extends HTMLElement {
       const i = this.shadowRoot.getElementById("transcript-body");
       i.style.display === "none" ? (i.style.display = "block", r.textContent = "Hide") : (i.style.display = "none", r.textContent = "Show");
     }), this._attachValidationListeners();
-    const s = this.shadowRoot.getElementById("complete-btn");
-    s && (s.onclick = () => {
+    const n = this.shadowRoot.getElementById("complete-btn");
+    n && (n.onclick = () => {
       this.isCompleted = !0, this.render();
     });
   }
@@ -239,10 +248,10 @@ const p = class p extends HTMLElement {
   _attachValidationListeners() {
     this.shadowRoot.querySelectorAll('input[type="radio"]').forEach((t) => {
       t.addEventListener("change", (o) => {
-        const n = o.target.value, r = o.target.getAttribute("data-correct"), s = o.target.getAttribute("data-label-id"), i = this.shadowRoot.getElementById(s), a = o.target.name, d = this.shadowRoot.querySelectorAll(`input[name="${a}"]`);
+        const s = o.target.value, r = o.target.getAttribute("data-correct"), n = o.target.getAttribute("data-label-id"), i = this.shadowRoot.getElementById(n), a = o.target.name, d = this.shadowRoot.querySelectorAll(`input[name="${a}"]`);
         d.forEach((c) => {
           c.disabled = !0;
-        }), n === r ? (i.classList.add("correct"), this.score++) : (i.classList.add("incorrect"), d.forEach((c) => {
+        }), s === r ? (i.classList.add("correct"), this.score++) : (i.classList.add("incorrect"), d.forEach((c) => {
           if (c.value === c.getAttribute("data-correct")) {
             const l = c.getAttribute("data-label-id");
             this.shadowRoot.getElementById(l).classList.add("correct-highlight");
@@ -267,10 +276,10 @@ const p = class p extends HTMLElement {
   }
   _getCombinedScore() {
     const e = p._instances;
-    let t = 0, o = 0, n = !0;
+    let t = 0, o = 0, s = !0;
     return e.forEach((r) => {
-      t += r.score, o += r.totalQuestions, r.isCompleted || (n = !1);
-    }), { totalScore: t, totalQuestions: o, allDone: n, count: e.length };
+      t += r.score, o += r.totalQuestions, r.isCompleted || (s = !1);
+    }), { totalScore: t, totalQuestions: o, allDone: s, count: e.length };
   }
   renderScoreScreen() {
     const e = Math.round(this.score / this.totalQuestions * 100) || 0;
@@ -278,15 +287,15 @@ const p = class p extends HTMLElement {
     e < 50 ? t = "💪" : e < 80 && (t = "👍");
     let o = "";
     if (this._isLastInstance()) {
-      const s = this._getCombinedScore();
-      if (s.allDone) {
-        const i = Math.round(s.totalScore / s.totalQuestions * 100) || 0;
+      const n = this._getCombinedScore();
+      if (n.allDone) {
+        const i = Math.round(n.totalScore / n.totalQuestions * 100) || 0;
         let a = "🏆";
         i < 50 ? a = "💪" : i < 80 && (a = "⭐"), o = `
                     <div class="combined-score">
-                        <div class="combined-header">${a} Combined Score — All ${s.count} Lessons</div>
+                        <div class="combined-header">${a} Combined Score — All ${n.count} Lessons</div>
                         <div class="combined-stats">
-                            <div class="combined-value">${s.totalScore} / ${s.totalQuestions}</div>
+                            <div class="combined-value">${n.totalScore} / ${n.totalQuestions}</div>
                             <div class="combined-percent">${i}%</div>
                         </div>
                         <div class="combined-bar-track">
@@ -298,11 +307,11 @@ const p = class p extends HTMLElement {
         o = `
                     <div class="combined-score combined-pending">
                         <div class="combined-header">📋 Lesson Progress</div>
-                        <p class="combined-note">${p._instances.filter((a) => a.isCompleted).length} of ${s.count} lessons completed. Finish all to see your combined score.</p>
+                        <p class="combined-note">${p._instances.filter((a) => a.isCompleted).length} of ${n.count} lessons completed. Finish all to see your combined score.</p>
                     </div>
                 `;
     }
-    const n = this._isLastInstance(), r = `
+    const s = this._isLastInstance(), r = `
   <style>${this.getBaseStyles()}</style>
   <div class="container score-screen">
     <div class="score-circle">
@@ -313,12 +322,12 @@ const p = class p extends HTMLElement {
     <p>You completed the "${this.lessonData.title || "Listening Lesson"}" activity.</p>
     <div class="score-actions">
         <button class="role-btn" id="restart-btn">Try Again</button>
-        ${n ? '<button class="report-btn" id="report-btn">📄 See Report Card</button>' : ""}
+        ${s ? '<button class="report-btn" id="report-btn">📄 See Report Card</button>' : ""}
     </div>
     ${o}
   </div>
 
-  ${n ? `
+  ${s ? `
   <div class="report-overlay" id="report-overlay" style="display:none;">
     <div class="report-modal">
       <div class="initial-form" id="initial-form">
@@ -337,14 +346,14 @@ const p = class p extends HTMLElement {
 `;
     this.shadowRoot.innerHTML = r, this.scrollIntoView({ behavior: "smooth", block: "start" }), this.shadowRoot.getElementById("restart-btn").addEventListener("click", () => {
       this.score = 0, this.answeredCount = 0, this.isCompleted = !1, this.currentPhase = 0, this.render();
-    }), n && (this.shadowRoot.getElementById("report-btn").addEventListener("click", () => {
+    }), s && (this.shadowRoot.getElementById("report-btn").addEventListener("click", () => {
       this._showReportOverlay();
     }), this.shadowRoot.getElementById("generate-btn").addEventListener("click", () => {
       this._generateReport();
     }), this.shadowRoot.getElementById("cancel-btn").addEventListener("click", () => {
       this.shadowRoot.getElementById("report-overlay").style.display = "none";
-    }), this.shadowRoot.getElementById("report-overlay").addEventListener("click", (s) => {
-      s.target.id === "report-overlay" && (this.shadowRoot.getElementById("report-overlay").style.display = "none");
+    }), this.shadowRoot.getElementById("report-overlay").addEventListener("click", (n) => {
+      n.target.id === "report-overlay" && (this.shadowRoot.getElementById("report-overlay").style.display = "none");
     }));
   }
   _showReportOverlay() {
@@ -358,15 +367,15 @@ const p = class p extends HTMLElement {
     }
   }
   _generateReport() {
-    const e = this.shadowRoot.getElementById("nickname-input"), t = this.shadowRoot.getElementById("number-input"), o = e ? e.value.trim() : this.studentInfo.nickname, n = t ? t.value.trim() : this.studentInfo.number;
-    if (!o || !n) {
+    const e = this.shadowRoot.getElementById("nickname-input"), t = this.shadowRoot.getElementById("number-input"), o = e ? e.value.trim() : this.studentInfo.nickname, s = t ? t.value.trim() : this.studentInfo.number;
+    if (!o || !s) {
       alert("Please enter both nickname and student number.");
       return;
     }
-    this.studentInfo = { nickname: o, number: n };
-    const r = this._getCombinedScore(), s = Math.round(r.totalScore / r.totalQuestions * 100) || 0, i = (/* @__PURE__ */ new Date()).toLocaleString();
+    this.studentInfo = { nickname: o, number: s };
+    const r = this._getCombinedScore(), n = Math.round(r.totalScore / r.totalQuestions * 100) || 0, i = (/* @__PURE__ */ new Date()).toLocaleString();
     let a = "🏆";
-    s < 50 ? a = "💪" : s < 80 && (a = "⭐");
+    n < 50 ? a = "💪" : n < 80 && (a = "⭐");
     const d = `
             <div class="rc-header">
                 <div class="rc-icon">📄</div>
@@ -375,16 +384,16 @@ const p = class p extends HTMLElement {
             </div>
             <div class="rc-student">
                 <span class="rc-label">Student</span>
-                <span class="rc-value">${o} <span class="rc-number">(${n})</span></span>
+                <span class="rc-value">${o} <span class="rc-number">(${s})</span></span>
             </div>
             <div class="rc-score-row">
                 <div class="rc-score-circle">
                     <div class="rc-score-val">${r.totalScore}/${r.totalQuestions}</div>
-                    <div class="rc-score-pct">${s}%</div>
+                    <div class="rc-score-pct">${n}%</div>
                 </div>
-                <div class="rc-score-label">${a} ${s >= 80 ? "Excellent!" : s >= 50 ? "Good effort!" : "Keep practicing!"}</div>
+                <div class="rc-score-label">${a} ${n >= 80 ? "Excellent!" : n >= 50 ? "Good effort!" : "Keep practicing!"}</div>
             </div>
-            <div class="rc-bar-track" style="margin: 0 0 16px 0;"><div class="rc-bar-fill" style="width:${s}%"></div></div>
+            <div class="rc-bar-track" style="margin: 0 0 16px 0;"><div class="rc-bar-fill" style="width:${n}%"></div></div>
             <div class="rc-details">
                 <div class="rc-detail-row"><span>Total Correct</span><span>${r.totalScore} / ${r.totalQuestions}</span></div>
                 <div class="rc-detail-row"><span>Completed On</span><span>${i}</span></div>
@@ -403,21 +412,21 @@ const p = class p extends HTMLElement {
     const t = window.speechSynthesis.getVoices();
     if (t.length === 0) return null;
     const o = e.split(/[-_]/)[0].toLowerCase();
-    let n = t.filter((i) => i.lang.toLowerCase() === e.toLowerCase());
-    if (n.length === 0 && (n = t.filter((i) => i.lang.split(/[-_]/)[0].toLowerCase() === o)), n.length === 0) return null;
+    let s = t.filter((i) => i.lang.toLowerCase() === e.toLowerCase());
+    if (s.length === 0 && (s = t.filter((i) => i.lang.split(/[-_]/)[0].toLowerCase() === o)), s.length === 0) return null;
     const r = ["natural", "google", "premium", "siri"];
     for (const i of r) {
-      const a = n.find((d) => d.name.toLowerCase().includes(i));
+      const a = s.find((d) => d.name.toLowerCase().includes(i));
       if (a) return a;
     }
-    return n.find((i) => !i.name.toLowerCase().includes("microsoft")) || n[0];
+    return s.find((i) => !i.name.toLowerCase().includes("microsoft")) || s[0];
   }
   _playTTS(e) {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const t = new SpeechSynthesisUtterance(e), o = this._getLang();
     t.lang = o, t.rate = 0.85;
-    let r = window.speechSynthesis.getVoices().find((s) => s.name === this.selectedVoiceName);
+    let r = window.speechSynthesis.getVoices().find((n) => n.name === this.selectedVoiceName);
     r || (r = this._getBestVoice(o)), r && (t.voice = r), t.onstart = () => {
       this.isPlaying = !0;
     }, t.onend = () => {
@@ -437,11 +446,11 @@ const p = class p extends HTMLElement {
   _showToast(e, t = !1) {
     const o = this.shadowRoot.querySelector(".toast");
     o && o.remove();
-    const n = document.createElement("div");
-    n.className = "toast", t ? (n.innerHTML = `<span>Quiz link:</span><input type="text" value="${e}" readonly class="toast-url" />`, n.querySelector(".toast-url").onclick = function() {
+    const s = document.createElement("div");
+    s.className = "toast", t ? (s.innerHTML = `<span>Quiz link:</span><input type="text" value="${e}" readonly class="toast-url" />`, s.querySelector(".toast-url").onclick = function() {
       this.select();
-    }) : n.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>${e}</span>`, this.shadowRoot.appendChild(n), setTimeout(() => {
-      n.parentNode && n.remove();
+    }) : s.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>${e}</span>`, this.shadowRoot.appendChild(s), setTimeout(() => {
+      s.parentNode && s.remove();
     }, 3e3);
   }
   _showVoiceOverlay() {
@@ -455,12 +464,12 @@ const p = class p extends HTMLElement {
   _updateVoiceList() {
     const e = this.shadowRoot.getElementById("voice-list");
     if (!e) return;
-    const t = window.speechSynthesis.getVoices(), o = this._getLang(), n = o.split(/[-_]/)[0].toLowerCase();
-    let r = t.filter((i) => i.lang.split(/[-_]/)[0].toLowerCase() === n);
-    const s = this._getBestVoice(o);
+    const t = window.speechSynthesis.getVoices(), o = this._getLang(), s = o.split(/[-_]/)[0].toLowerCase();
+    let r = t.filter((i) => i.lang.split(/[-_]/)[0].toLowerCase() === s);
+    const n = this._getBestVoice(o);
     e.innerHTML = "", r.sort((i, a) => i.name.localeCompare(a.name)), r.forEach((i) => {
       const a = document.createElement("button");
-      a.classList.add("voice-option-btn"), (this.selectedVoiceName === i.name || !this.selectedVoiceName && s && i.name === s.name) && a.classList.add("active"), a.innerHTML = `<span>${i.name}</span>`, s && i.name === s.name && (a.innerHTML += '<span class="badge">Best</span>'), a.onclick = () => {
+      a.classList.add("voice-option-btn"), (this.selectedVoiceName === i.name || !this.selectedVoiceName && n && i.name === n.name) && a.classList.add("active"), a.innerHTML = `<span>${i.name}</span>`, n && i.name === n.name && (a.innerHTML += '<span class="badge">Best</span>'), a.onclick = () => {
         this.selectedVoiceName = i.name, this._updateVoiceList(), this._hideVoiceOverlay();
       }, e.appendChild(a);
     });

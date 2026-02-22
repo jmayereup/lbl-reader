@@ -99,30 +99,39 @@ class L extends HTMLElement {
   }
   loadData() {
     try {
-      this.rawJson || (this.rawJson = this.innerHTML.trim(), this.innerHTML = "");
-      const e = this.rawJson;
+      let e = "";
+      if (this.config)
+        if (typeof this.config == "object") {
+          this._processParsedData(this.config);
+          return;
+        } else
+          e = String(this.config);
+      else this.hasAttribute("config") ? e = this.getAttribute("config") : this.rawJson ? e = this.rawJson : (this.rawJson = this.innerHTML.trim(), this.innerHTML = "", e = this.rawJson);
       if (e) {
         const i = e.replace(/"((?:\\.|[^"\\])*)"/gs, (t, r) => '"' + r.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"'), o = JSON.parse(i);
-        this.data = (Array.isArray(o) ? o : [o]).map((t) => {
-          const r = [...t.translationOptions], n = t.translationOptions[t.correctTranslationIndex];
-          for (let d = r.length - 1; d > 0; d--) {
-            const p = Math.floor(Math.random() * (d + 1));
-            [r[d], r[p]] = [r[p], r[d]];
-          }
-          const s = t.original.split(/\s+/), a = t.highlightIndex, l = t.highlightIndexEnd !== void 0 ? t.highlightIndexEnd : a, h = s.slice(a, l + 1).join(" ").replace(/[.,!?;:]/g, "");
-          return {
-            ...t,
-            highlightIndexEnd: l,
-            shuffledOptions: r,
-            newCorrectIndex: r.indexOf(n),
-            originalWord: h,
-            translationWord: n
-          };
-        }), this.matchingGamesCompleted = 0, this.render();
+        this._processParsedData(o);
       }
     } catch (e) {
       console.error("Failed to parse JSON data for lbl-reader", e), this.shadowRoot.innerHTML = '<div class="error">Error loading data. Check console.</div>';
     }
+  }
+  _processParsedData(e) {
+    this.data = (Array.isArray(e) ? e : [e]).map((i) => {
+      const o = [...i.translationOptions], t = i.translationOptions[i.correctTranslationIndex];
+      for (let a = o.length - 1; a > 0; a--) {
+        const d = Math.floor(Math.random() * (a + 1));
+        [o[a], o[d]] = [o[d], o[a]];
+      }
+      const r = i.original.split(/\\s+/), n = i.highlightIndex, s = i.highlightIndexEnd !== void 0 ? i.highlightIndexEnd : n, l = r.slice(n, s + 1).join(" ").replace(/[.,!?;:]/g, "");
+      return {
+        ...i,
+        highlightIndexEnd: s,
+        shuffledOptions: o,
+        newCorrectIndex: o.indexOf(t),
+        originalWord: l,
+        translationWord: t
+      };
+    }), this.matchingGamesCompleted = 0, this.render();
   }
   displayAllLines() {
     const e = this.shadowRoot.querySelector(".story-container");
@@ -133,27 +142,27 @@ class L extends HTMLElement {
       n.classList.add("card"), n.dataset.index = r;
       const s = document.createElement("div");
       s.classList.add("card-header");
-      const a = document.createElement("div");
-      a.classList.add("original-text"), t.original.split(" ").forEach((p, m) => {
-        const c = document.createElement("span");
-        c.textContent = p + " ", c.classList.add("tts-word"), !this.isSwapped && m >= t.highlightIndex && m <= t.highlightIndexEnd && c.classList.add("highlight"), c.onclick = (g) => {
-          g.stopPropagation(), this.isPlayingAll && this.stopFullPlayback(), this._speak(p.replace(/[.,!?;:]/g, ""), i);
-        }, a.appendChild(c);
-      }), s.appendChild(a), n.appendChild(s), this.renderLineButtons(r, n);
       const l = document.createElement("div");
-      l.classList.add("full-translation"), t.fullTranslation.split(" ").forEach((p, m) => {
+      l.classList.add("original-text"), t.original.split(" ").forEach((h, m) => {
         const c = document.createElement("span");
-        c.textContent = p + " ", c.classList.add("tts-word"), this.isSwapped && m >= t.highlightIndex && m <= t.highlightIndexEnd && c.classList.add("highlight"), c.onclick = (g) => {
-          g.stopPropagation(), this.isPlayingAll && this.stopFullPlayback(), this._speak(p.replace(/[.,!?;:]/g, ""), o);
+        c.textContent = h + " ", c.classList.add("tts-word"), !this.isSwapped && m >= t.highlightIndex && m <= t.highlightIndexEnd && c.classList.add("highlight"), c.onclick = (g) => {
+          g.stopPropagation(), this.isPlayingAll && this.stopFullPlayback(), this._speak(h.replace(/[.,!?;:]/g, ""), i);
         }, l.appendChild(c);
+      }), s.appendChild(l), n.appendChild(s), this.renderLineButtons(r, n);
+      const a = document.createElement("div");
+      a.classList.add("full-translation"), t.fullTranslation.split(" ").forEach((h, m) => {
+        const c = document.createElement("span");
+        c.textContent = h + " ", c.classList.add("tts-word"), this.isSwapped && m >= t.highlightIndex && m <= t.highlightIndexEnd && c.classList.add("highlight"), c.onclick = (g) => {
+          g.stopPropagation(), this.isPlayingAll && this.stopFullPlayback(), this._speak(h.replace(/[.,!?;:]/g, ""), o);
+        }, a.appendChild(c);
       });
-      const h = document.createElement("div");
-      h.classList.add("translation-options");
-      const d = this.completedIndices.has(r);
-      d && n.classList.add("completed", "answered"), t.shuffledOptions.forEach((p, m) => {
+      const d = document.createElement("div");
+      d.classList.add("translation-options");
+      const p = this.completedIndices.has(r);
+      p && n.classList.add("completed", "answered"), t.shuffledOptions.forEach((h, m) => {
         const c = document.createElement("button");
-        c.textContent = p, c.addEventListener("click", () => this.handleSelection(r, m, t.newCorrectIndex, c, n)), d && (c.disabled = !0, m !== t.newCorrectIndex ? c.style.opacity = "0.5" : c.classList.add("success")), h.appendChild(c);
-      }), n.appendChild(l), n.appendChild(h), e.appendChild(n);
+        c.textContent = h, c.addEventListener("click", () => this.handleSelection(r, m, t.newCorrectIndex, c, n)), p && (c.disabled = !0, m !== t.newCorrectIndex ? c.style.opacity = "0.5" : c.classList.add("success")), d.appendChild(c);
+      }), n.appendChild(a), n.appendChild(d), e.appendChild(n);
     }), this.updateProgress();
   }
   _getBestVoice(e) {
@@ -165,8 +174,8 @@ class L extends HTMLElement {
     if (t.length === 0 && (t = i.filter((s) => s.lang.split(/[-_]/)[0].toLowerCase() === o)), t.length === 0) return null;
     const r = ["natural", "google", "premium", "siri"];
     for (const s of r) {
-      const a = t.find((l) => l.name.toLowerCase().includes(s));
-      if (a) return a;
+      const l = t.find((a) => a.name.toLowerCase().includes(s));
+      if (l) return l;
     }
     return t.find((s) => !s.name.toLowerCase().includes("microsoft")) || t[0];
   }
@@ -178,24 +187,24 @@ class L extends HTMLElement {
     const e = window.speechSynthesis.getVoices(), i = this.shadowRoot.querySelector(".voice-list"), o = this.shadowRoot.querySelector("#voice-btn");
     if (!i || !o) return;
     const t = this.getAttribute("lang-original") || "en", r = t.split(/[-_]/)[0].toLowerCase();
-    let n = e.filter((a) => a.lang.toLowerCase() === t.toLowerCase());
-    if (n.length === 0 && (n = e.filter((a) => a.lang.split(/[-_]/)[0].toLowerCase() === r)), n.length === 0) {
+    let n = e.filter((l) => l.lang.toLowerCase() === t.toLowerCase());
+    if (n.length === 0 && (n = e.filter((l) => l.lang.split(/[-_]/)[0].toLowerCase() === r)), n.length === 0) {
       o.style.display = "none";
       return;
     }
     o.style.display = "flex", i.innerHTML = "";
     const s = this._getBestVoice(t);
-    !this.selectedVoiceName && s && (this.selectedVoiceName = s.name), n.sort((a, l) => a.name.localeCompare(l.name)), n.forEach((a) => {
-      const l = document.createElement("button");
-      l.classList.add("voice-option-btn"), this.selectedVoiceName === a.name && l.classList.add("active");
-      const h = document.createElement("span");
-      if (h.textContent = a.name, l.appendChild(h), s && a.name === s.name) {
-        const d = document.createElement("span");
-        d.classList.add("badge"), d.textContent = "Best", l.appendChild(d);
+    !this.selectedVoiceName && s && (this.selectedVoiceName = s.name), n.sort((l, a) => l.name.localeCompare(a.name)), n.forEach((l) => {
+      const a = document.createElement("button");
+      a.classList.add("voice-option-btn"), this.selectedVoiceName === l.name && a.classList.add("active");
+      const d = document.createElement("span");
+      if (d.textContent = l.name, a.appendChild(d), s && l.name === s.name) {
+        const p = document.createElement("span");
+        p.classList.add("badge"), p.textContent = "Best", a.appendChild(p);
       }
-      l.onclick = () => {
-        this.selectedVoiceName = a.name, this._updateVoiceList(), this._hideVoiceOverlay();
-      }, i.appendChild(l);
+      a.onclick = () => {
+        this.selectedVoiceName = l.name, this._updateVoiceList(), this._hideVoiceOverlay();
+      }, i.appendChild(a);
     });
   }
   _showVoiceOverlay() {
@@ -214,8 +223,8 @@ class L extends HTMLElement {
     window.speechSynthesis.cancel();
     const t = new SpeechSynthesisUtterance(e);
     let r = null;
-    const n = this.getAttribute("lang-original") || "en", s = i.split(/[-_]/)[0].toLowerCase(), a = n.split(/[-_]/)[0].toLowerCase();
-    return this.selectedVoiceName && s === a && (r = window.speechSynthesis.getVoices().find((h) => h.name === this.selectedVoiceName)), r || (r = this._getBestVoice(i)), r && (t.voice = r), t.lang = i, t.rate = 0.7, o && (t.onend = o), window.speechSynthesis.speak(t), t;
+    const n = this.getAttribute("lang-original") || "en", s = i.split(/[-_]/)[0].toLowerCase(), l = n.split(/[-_]/)[0].toLowerCase();
+    return this.selectedVoiceName && s === l && (r = window.speechSynthesis.getVoices().find((d) => d.name === this.selectedVoiceName)), r || (r = this._getBestVoice(i)), r && (t.voice = r), t.lang = i, t.rate = 0.7, o && (t.onend = o), window.speechSynthesis.speak(t), t;
   }
   toggleFullPlayback() {
     this.isPlayingAll ? this.isPaused ? this.resumeFullPlayback() : this.pauseFullPlayback() : this.startFullPlayback();
@@ -245,7 +254,7 @@ class L extends HTMLElement {
           n.data.size > 0 && r.push(n.data);
         }, this.mediaRecorder.onstop = () => {
           const n = new Blob(r, { type: this._recordingMimeType });
-          Date.now() - this.recordingStartTime > 600 ? (this.recordedBlobs.set(e, n), this.recordedSentences.add(e)) : console.warn("Recording too short to be counted."), i.getTracks().forEach((a) => a.stop()), this.isRecordingLine = null, this.renderLineButtons(e);
+          Date.now() - this.recordingStartTime > 600 ? (this.recordedBlobs.set(e, n), this.recordedSentences.add(e)) : console.warn("Recording too short to be counted."), i.getTracks().forEach((l) => l.stop()), this.isRecordingLine = null, this.renderLineButtons(e);
         }, this.recordingStartTime = Date.now(), this.isRecordingLine = e, this.mediaRecorder.start(1e3), this.renderLineButtons(e);
       } catch (i) {
         console.error("Error starting recording:", i), alert("Could not access microphone. Please check permissions.");
@@ -330,16 +339,16 @@ class L extends HTMLElement {
   handleSelection(e, i, o, t, r) {
     if (r.classList.contains("answered")) return;
     if (i === o) {
-      r.classList.add("answered"), this.answeredCount++, this.completedIndices.add(e), r.dataset.hadError || this.score++, t.classList.add("success"), r.classList.add("completed"), r.classList.remove("failed"), r.querySelectorAll(".translation-options button").forEach((l) => {
-        l.disabled = !0, l !== t && (l.style.opacity = "0.5");
+      r.classList.add("answered"), this.answeredCount++, this.completedIndices.add(e), r.dataset.hadError || this.score++, t.classList.add("success"), r.classList.add("completed"), r.classList.remove("failed"), r.querySelectorAll(".translation-options button").forEach((a) => {
+        a.disabled = !0, a !== t && (a.style.opacity = "0.5");
       }), this.updateProgress();
-      const a = r.nextElementSibling;
-      a && !a.classList.contains("finish-container") ? setTimeout(() => {
-        a.scrollIntoView({ behavior: "smooth", block: "center" }), this.isAutoplay && this.playLine(e + 1, !1);
+      const l = r.nextElementSibling;
+      l && !l.classList.contains("finish-container") ? setTimeout(() => {
+        l.scrollIntoView({ behavior: "smooth", block: "center" }), this.isAutoplay && this.playLine(e + 1, !1);
       }, 600) : setTimeout(() => {
         this.clearPlaybackHighlights();
-        const l = this.shadowRoot.querySelector(".finish-btn");
-        l && l.scrollIntoView({ behavior: "smooth", block: "center" });
+        const a = this.shadowRoot.querySelector(".finish-btn");
+        a && a.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 600);
     } else
       t.classList.add("error"), t.disabled = !0, r.classList.add("failed"), r.dataset.hadError = "true";
@@ -358,15 +367,15 @@ class L extends HTMLElement {
       t = o.sort(() => 0.5 - Math.random()).slice(0, 5);
     else {
       t = [...o];
-      const n = 5 - t.length, s = i.filter((a) => !o.includes(a)).sort(() => 0.5 - Math.random());
+      const n = 5 - t.length, s = i.filter((l) => !o.includes(l)).sort(() => 0.5 - Math.random());
       t = t.concat(s.slice(0, n));
     }
     if (t.forEach((n) => this.unscrambleUsedSentences.add(n)), this.unscrambleUsedSentences.size >= this.data.length && (this.unscrambleUsedSentences.clear(), t.forEach((n) => this.unscrambleUsedSentences.add(n))), this.unscrambleData = t.map((n) => {
-      const s = this.data[n], a = s.original.split(/\s+/).filter((h) => h.length > 0), l = [...a].sort(() => 0.5 - Math.random());
+      const s = this.data[n], l = s.original.split(/\s+/).filter((d) => d.length > 0), a = [...l].sort(() => 0.5 - Math.random());
       return {
         ...s,
-        correctWords: a,
-        shuffledWords: l
+        correctWords: l,
+        shuffledWords: a
       };
     }), this.unscrambleTotal = this.unscrambleData.length, this.currentUnscrambleIndex = 0, this.unscrambleScore = 0, this.userUnscrambledWords = [], (this.getAttribute("lang-original") || "en") === "th") {
       this.startMemoryGame();
@@ -385,31 +394,31 @@ class L extends HTMLElement {
     s.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>', s.classList.add("voice-btn"), s.style.margin = "0 auto 1em auto", s.onclick = () => {
       this._speak(o.original, n);
     }, t.appendChild(s);
-    const a = document.createElement("div");
-    a.classList.add("full-translation"), a.style.fontSize = "1.2em", a.textContent = o.fullTranslation, a.setAttribute("lang", this.getAttribute("lang-translation") || "th"), t.appendChild(a);
     const l = document.createElement("div");
-    l.classList.add("unscramble-result"), l.setAttribute("lang", n), t.appendChild(l);
-    const h = document.createElement("div");
-    h.classList.add("unscramble-pool"), h.setAttribute("lang", n), t.appendChild(h);
-    const d = () => {
-      l.innerHTML = "", this.userUnscrambledWords.forEach((b, u) => {
+    l.classList.add("full-translation"), l.style.fontSize = "1.2em", l.textContent = o.fullTranslation, l.setAttribute("lang", this.getAttribute("lang-translation") || "th"), t.appendChild(l);
+    const a = document.createElement("div");
+    a.classList.add("unscramble-result"), a.setAttribute("lang", n), t.appendChild(a);
+    const d = document.createElement("div");
+    d.classList.add("unscramble-pool"), d.setAttribute("lang", n), t.appendChild(d);
+    const p = () => {
+      a.innerHTML = "", this.userUnscrambledWords.forEach((b, u) => {
         const f = document.createElement("button");
         f.textContent = b, f.onclick = () => {
-          this.userUnscrambledWords.splice(u, 1), d();
-        }, l.appendChild(f);
-      }), h.innerHTML = "", o.shuffledWords.forEach((b, u) => {
+          this.userUnscrambledWords.splice(u, 1), p();
+        }, a.appendChild(f);
+      }), d.innerHTML = "", o.shuffledWords.forEach((b, u) => {
         const f = this.userUnscrambledWords.filter((y) => y === b).length, w = o.shuffledWords.filter((y) => y === b).length;
         if (f < w) {
           const y = document.createElement("button");
           y.textContent = b, y.onclick = () => {
-            this.userUnscrambledWords.push(b), d();
-          }, h.appendChild(y);
+            this.userUnscrambledWords.push(b), p();
+          }, d.appendChild(y);
         }
       });
     };
-    d();
-    const p = document.createElement("div");
-    p.classList.add("unscramble-actions");
+    p();
+    const h = document.createElement("div");
+    h.classList.add("unscramble-actions");
     const m = document.createElement("button");
     m.textContent = "Skip", m.style.opacity = "0.7", m.onclick = () => {
       this.currentUnscrambleIndex++, this.userUnscrambledWords = [], this.currentUnscrambleIndex < this.unscrambleData.length ? (this.renderUnscrambleChallenge(), this.updateProgress()) : this.renderUnscrambleCompletion();
@@ -422,8 +431,8 @@ class L extends HTMLElement {
     };
     const g = document.createElement("button");
     g.textContent = "Reset", g.onclick = () => {
-      this.userUnscrambledWords = [], d();
-    }, p.appendChild(g), p.appendChild(m), p.appendChild(c), t.appendChild(p), i.appendChild(t), e && t.scrollIntoView({ behavior: "smooth", block: "center" });
+      this.userUnscrambledWords = [], p();
+    }, h.appendChild(g), h.appendChild(m), h.appendChild(c), t.appendChild(h), i.appendChild(t), e && t.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   startMemoryGame(e = !0) {
     this.shadowRoot.querySelector("#memory-section").style.display = "block", this.matchingGamesCompleted++, this.matchedPairsCount = 0, this.flippedCards = [], this.isCheckingMatch = !1;
@@ -463,14 +472,14 @@ class L extends HTMLElement {
       <p>Match the word with its translation!</p>
     `, e.appendChild(i);
     const o = document.createElement("div");
-    o.classList.add("memory-grid"), this.memoryGameData.forEach((s, a) => {
-      const l = document.createElement("div");
-      l.classList.add("memory-card"), l.dataset.index = a, l.innerHTML = `
+    o.classList.add("memory-grid"), this.memoryGameData.forEach((s, l) => {
+      const a = document.createElement("div");
+      a.classList.add("memory-card"), a.dataset.index = l, a.innerHTML = `
         <div class="memory-card-inner">
           <div class="memory-card-front">?</div>
           <div class="memory-card-back" lang="${s.lang}">${s.text}</div>
         </div>
-      `, l.onclick = () => this.handleMemoryCardFlip(l, s), o.appendChild(l);
+      `, a.onclick = () => this.handleMemoryCardFlip(a, s), o.appendChild(a);
     }), e.appendChild(o);
     const t = document.createElement("div");
     t.classList.add("memory-game-actions");
@@ -505,10 +514,10 @@ class L extends HTMLElement {
       return;
     }
     this.studentInfo = { nickname: e, number: i };
-    const o = this.getAttribute("story-title") || "Story Practice", t = (/* @__PURE__ */ new Date()).toLocaleString(), r = this.data.length > 0 ? this.score / this.data.length : 0, n = this.data.length > 0 ? this.recordedSentences.size / this.data.length : 0, s = this.unscrambleData.length || this.unscrambleTotal, a = s > 0 ? this.unscrambleScore / s : 0, l = this.memoryGameData.length / 2 || this.memoryTotal, h = l > 0 ? this.matchedPairsCount / l : 0;
-    let d = 85, p = 10, m = 5;
-    this.unscrambleData.length === 0 && (d += p, p = 0);
-    const c = r * d + a * p + h * m, g = r * (d / 2) + n * (d / 2) + a * p + h * m, b = this.shadowRoot.querySelector(".report-area");
+    const o = this.getAttribute("story-title") || "Story Practice", t = (/* @__PURE__ */ new Date()).toLocaleString(), r = this.data.length > 0 ? this.score / this.data.length : 0, n = this.data.length > 0 ? this.recordedSentences.size / this.data.length : 0, s = this.unscrambleData.length || this.unscrambleTotal, l = s > 0 ? this.unscrambleScore / s : 0, a = this.memoryGameData.length / 2 || this.memoryTotal, d = a > 0 ? this.matchedPairsCount / a : 0;
+    let p = 85, h = 10, m = 5;
+    this.unscrambleData.length === 0 && (p += h, h = 0);
+    const c = r * p + l * h + d * m, g = r * (p / 2) + n * (p / 2) + l * h + d * m, b = this.shadowRoot.querySelector(".report-area");
     if (b.innerHTML = `
       <div class="report-card">
         <div class="report-icon">📄</div>
@@ -520,7 +529,7 @@ class L extends HTMLElement {
         <p><strong>Translation Score:</strong> ${this.score} / ${this.data.length}</p>
         <p><strong>Sentences Recorded:</strong> ${this.recordedSentences.size} / ${this.data.length}</p>
         ${s > 0 ? `<p><strong>Unscramble Score:</strong> ${this.unscrambleScore} / ${s}</p>` : ""}
-        <p><strong>Matching Pairs:</strong> ${this.matchedPairsCount} / ${l}</p>
+        <p><strong>Matching Pairs:</strong> ${this.matchedPairsCount} / ${a}</p>
         <p><strong>Completed On:</strong> ${t}</p>
         
         <div class="report-actions">
