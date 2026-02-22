@@ -258,7 +258,8 @@
 }
 
 .record-btn,
-.play-recorded-btn {
+.play-recorded-btn,
+.skip-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -268,6 +269,28 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 0.9em;
+}
+
+.skip-btn {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.skip-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.skipped-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #94a3b8;
+  font-weight: 600;
   font-size: 0.9em;
 }
 

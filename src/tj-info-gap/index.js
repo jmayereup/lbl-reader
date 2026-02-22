@@ -33,6 +33,7 @@ class TjInfoGap extends HTMLElement {
 
         // Recording state
         this.recordedBlobs = new Map(); // questionId -> Blob
+        this.skippedRecordings = new Set(); // questionId -> skipped
         this.mediaRecorder = null;
         this.isRecordingId = null; // null or questionId
         this.recordingStartTime = 0;
@@ -462,7 +463,16 @@ class TjInfoGap extends HTMLElement {
     renderRecordingButtons(questionId) {
         const isRecording = this.isRecordingId === questionId;
         const hasRecording = this.recordedBlobs.has(questionId);
+        const isSkipped = this.skippedRecordings.has(questionId);
         const isPlaying = this.isPlayingRecordingId === questionId;
+
+        if (isSkipped) {
+            return `
+                <div class="btn-group">
+                    <span class="skipped-label">Skipped (No Mic)</span>
+                </div>
+            `;
+        }
 
         let html = `
             <div class="btn-group">
@@ -478,6 +488,15 @@ class TjInfoGap extends HTMLElement {
                     ${isRecording ? 'Stop' : (hasRecording ? 'Re-record' : 'Record')}
                 </button>
         `;
+
+        if (!hasRecording && !isRecording) {
+            html += `
+                <button class="skip-btn" onclick="this.getRootNode().host.skipRecording('${questionId}')" title="Skip Recording">
+                    Skip
+                </button>
+            `;
+        }
+
 
         if (hasRecording && !isRecording) {
             html += `
@@ -592,6 +611,16 @@ class TjInfoGap extends HTMLElement {
         const container = this.shadowRoot.getElementById(`rec-controls-${id}`);
         if (container) {
             container.innerHTML = this.renderRecordingButtons(id);
+        }
+    }
+
+    skipRecording(id) {
+        if (!this.recordedBlobs.has(id) && !this.skippedRecordings.has(id)) {
+            this.skippedRecordings.add(id);
+            this.answeredCount++;
+            this.updateProgressDisplay();
+            this._checkCompletion();
+            this.refreshRecordingUI(id);
         }
     }
 
