@@ -1030,7 +1030,7 @@ class TjChapterBook extends HTMLElement {
             this.loadData(src);
         } else {
             // Use setTimeout to ensure children (JSON content) are parsed by the browser
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 try {
                     const data = JSON.parse(this.textContent);
                     this.render(data);
@@ -1038,7 +1038,7 @@ class TjChapterBook extends HTMLElement {
                     console.error('Error parsing inline JSON data', e);
                     this.innerHTML = `<p style="color: red;">Error loading book data: Invalid JSON.</p>`;
                 }
-            }, 0);
+            });
         }
     }
 

@@ -7,9 +7,9 @@ class n extends HTMLElement {
       const e = document.createElement("script");
       e.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js", e.async = !0, document.head.appendChild(e);
     }
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.loadData(), this.ensureMarked(), this.render();
-    }, 0);
+    });
   }
   ensureMarked() {
     if (!window.marked) {

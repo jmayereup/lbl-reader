@@ -31,7 +31,7 @@ class TjPronunciation extends HTMLElement {
     if (src) {
       this.loadData(src);
     } else {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         try {
           const data = JSON.parse(this.textContent.trim());
           this.render(data);
@@ -39,7 +39,7 @@ class TjPronunciation extends HTMLElement {
           console.error("Error parsing inline JSON data", e);
           this.shadowRoot.innerHTML = `<p style="color: red;">Error loading pronunciation data: Invalid JSON.</p>`;
         }
-      }, 0);
+      });
     }
   }
 

@@ -91,11 +91,11 @@ class L extends HTMLElement {
     };
   }
   connectedCallback() {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.loadData(), this.checkBrowserSupport(), window.speechSynthesis.onvoiceschanged !== void 0 && (window.speechSynthesis.onvoiceschanged = () => {
         this._updateVoiceList();
       }), this._updateVoiceList(), setTimeout(() => this._updateVoiceList(), 500), setTimeout(() => this._updateVoiceList(), 1500);
-    }, 0);
+    });
   }
   loadData() {
     try {

@@ -68,7 +68,7 @@ class TjReader extends HTMLElement {
 
   connectedCallback() {
     // Use setTimeout to ensure children (JSON content) are parsed by the browser
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.loadData();
       this.checkBrowserSupport();
 
@@ -82,7 +82,7 @@ class TjReader extends HTMLElement {
       this._updateVoiceList();
       setTimeout(() => this._updateVoiceList(), 500);
       setTimeout(() => this._updateVoiceList(), 1500);
-    }, 0);
+    });
   }
 
   loadData() {

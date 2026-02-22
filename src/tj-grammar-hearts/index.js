@@ -41,11 +41,11 @@ class TjGrammarHearts extends HTMLElement {
     }
 
     // Use setTimeout to ensure children are parsed
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.loadData();
       this.ensureMarked();
       this.render();
-    }, 0);
+    });
   }
 
   ensureMarked() {

@@ -53,7 +53,7 @@ class TjQuizElement extends HTMLElement {
 
     connectedCallback() {
         // Use setTimeout to ensure children (text content) are parsed by the browser
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             // Store the original content before rendering shadow DOM
             this.originalContent = this.textContent;
 
@@ -86,7 +86,7 @@ class TjQuizElement extends HTMLElement {
             if (savedData) {
                 this.restoreQuizState(savedData);
             }
-        }, 0);
+        });
     }
 
     loadTemplate() {

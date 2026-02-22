@@ -47,10 +47,10 @@ class TjSpeedReview extends HTMLElement {
     });
 
     // Use setTimeout to ensure children are parsed
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.loadData();
       this.render();
-    }, 0);
+    });
   }
 
   loadLibrary(name, src, callback) {

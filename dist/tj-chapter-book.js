@@ -981,14 +981,14 @@ class g extends HTMLElement {
   connectedCallback() {
     this.synth && this.synth.onvoiceschanged !== void 0 && (this.synth.onvoiceschanged = () => this._updateVoiceList()), this._initVisibilityObserver();
     const t = this.getAttribute("src");
-    t ? this.loadData(t) : setTimeout(() => {
+    t ? this.loadData(t) : requestAnimationFrame(() => {
       try {
         const o = JSON.parse(this.textContent);
         this.render(o);
       } catch (o) {
         console.error("Error parsing inline JSON data", o), this.innerHTML = '<p style="color: red;">Error loading book data: Invalid JSON.</p>';
       }
-    }, 0);
+    });
   }
   async loadData(t) {
     try {

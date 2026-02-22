@@ -5,9 +5,9 @@ class n extends HTMLElement {
   connectedCallback() {
     this.timeLimit = parseInt(this.getAttribute("time-limit")) || 15, this.questionsPerRound = parseInt(this.getAttribute("round-size")) || 10, this.bestScore = 0, this.loadLibrary("marked", "https://cdn.jsdelivr.net/npm/marked/marked.min.js"), this.loadLibrary("Tone", "https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js", () => {
       this.initAudio();
-    }), setTimeout(() => {
+    }), requestAnimationFrame(() => {
       this.loadData(), this.render();
-    }, 0);
+    });
   }
   loadLibrary(e, i, s) {
     if (window[e]) {

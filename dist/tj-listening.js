@@ -8,7 +8,7 @@ const p = class p extends HTMLElement {
     this.isQuizMode = e.get("quiz") === "1", p._instances.push(this), window.speechSynthesis && window.speechSynthesis.addEventListener("voiceschanged", () => this._updateVoiceList());
   }
   connectedCallback() {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       var t, o;
       const e = this.textContent.trim();
       this.textContent = "";
@@ -17,7 +17,7 @@ const p = class p extends HTMLElement {
       } catch (n) {
         this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${n.message}</p>`;
       }
-    }, 0);
+    });
   }
   _getLang() {
     var e;

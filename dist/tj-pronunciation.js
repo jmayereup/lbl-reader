@@ -49,14 +49,14 @@ class f extends HTMLElement {
   }
   connectedCallback() {
     const t = this.getAttribute("src");
-    t ? this.loadData(t) : setTimeout(() => {
+    t ? this.loadData(t) : requestAnimationFrame(() => {
       try {
         const e = JSON.parse(this.textContent.trim());
         this.render(e);
       } catch (e) {
         console.error("Error parsing inline JSON data", e), this.shadowRoot.innerHTML = '<p style="color: red;">Error loading pronunciation data: Invalid JSON.</p>';
       }
-    }, 0);
+    });
   }
   async loadData(t) {
     try {

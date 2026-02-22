@@ -37,7 +37,7 @@ class TjListening extends HTMLElement {
 
     connectedCallback() {
         // Use setTimeout to ensure children (JSON content) are parsed by the browser
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             const rawJson = this.textContent.trim();
             this.textContent = '';
 
@@ -53,7 +53,7 @@ class TjListening extends HTMLElement {
             } catch (error) {
                 this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
             }
-        }, 0);
+        });
     }
 
     _getLang() {

@@ -114,7 +114,7 @@ const I = ":host{all:initial;display:block;font-family:Outfit,Inter,system-ui,-a
         `;
   }
   connectedCallback() {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       const e = this.textContent.trim();
       this.textContent = "";
       try {
@@ -122,7 +122,7 @@ const I = ":host{all:initial;display:block;font-family:Outfit,Inter,system-ui,-a
       } catch (t) {
         this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${t.message}</p>`;
       }
-    }, 0);
+    });
   }
   render() {
     this.shadowRoot.getElementById("selection-screen").style.display = "none", this.shadowRoot.getElementById("game-screen").style.display = "none", this.shadowRoot.getElementById("score-screen").style.display = "none", this.currentPlayerId === null ? this.renderSelectionScreen() : this.isCompleted ? this.renderScoreScreen() : this.renderGameScreen();
