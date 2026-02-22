@@ -268,7 +268,6 @@ class TjGrammarHearts extends HTMLElement {
         :host {
           display: block;
           font-family: 'Outfit', 'Inter', sans-serif;
-          max-width: 600px;
           margin: 2em auto;
           color: #1e293b;
         }

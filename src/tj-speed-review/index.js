@@ -260,7 +260,6 @@ class TjSpeedReview extends HTMLElement {
         :host {
           display: block;
           font-family: 'Inter', sans-serif;
-          max-width: 600px;
           margin: 2em auto;
           color: #f1f5f9;
         }
