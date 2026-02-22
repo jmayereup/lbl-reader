@@ -8,13 +8,13 @@
   background-color: transparent !important; /* Force transparency on the host tag to avoid outer leakage */
 
   /* Standard Theme Variables */
-  --tj-primary: #22d3ee;
-  --tj-bg-color: #0f172a;
-  --tj-card-bg: #1e293b;
-  --tj-text-color: #f1f5f9;
-  --tj-text-muted: #94a3b8;
-  --tj-border-color: rgba(255, 255, 255, 0.1);
-  --tj-accent-color: #22d3ee;
+  --tj-primary: #2563eb;
+  --tj-bg-color: #f8fafc;
+  --tj-card-bg: #ffffff;
+  --tj-text-color: #1e293b;
+  --tj-text-muted: #64748b;
+  --tj-border-color: #e2e8f0;
+  --tj-accent-color: #2563eb;
 }
 
 /* Force local reset for isolation */

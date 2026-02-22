@@ -229,7 +229,7 @@
 }
 
 .scramble-word {
-  background: white;
+  background: var(--tj-bg-card);
   border: 1px solid var(--tj-border-main);
   padding: 0.6rem 1.2rem;
   border-radius: var(--tj-border-radius-md);
@@ -278,7 +278,7 @@
   margin-bottom: 0.5rem;
   border: 1px solid var(--tj-border-main);
   border-radius: var(--tj-border-radius-md);
-  background: white;
+  background: var(--tj-bg-card);
   color: var(--tj-text-main);
   cursor: pointer;
   display: flex;
