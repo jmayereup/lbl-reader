@@ -136,7 +136,7 @@ class TjReader extends HTMLElement {
         [options[i], options[j]] = [options[j], options[i]];
       }
 
-      const words = item.original.split(/\\s+/);
+      const words = item.original.split(/\s+/);
       const start = item.highlightIndex;
       const end = item.highlightIndexEnd !== undefined ? item.highlightIndexEnd : start;
       const originalWord = words.slice(start, end + 1).join(' ').replace(/[.,!?;:]/g, '');
