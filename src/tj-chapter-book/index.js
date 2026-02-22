@@ -1026,19 +1026,35 @@ class TjChapterBook extends HTMLElement {
         this._initVisibilityObserver();
 
         const src = this.getAttribute('src');
-        if (src) {
-            this.loadData(src);
-        } else {
-            // Use setTimeout to ensure children (JSON content) are parsed by the browser
-            requestAnimationFrame(() => {
-                try {
-                    const data = JSON.parse(this.textContent);
-                    this.render(data);
-                } catch (e) {
-                    console.error('Error parsing inline JSON data', e);
-                    this.innerHTML = `<p style="color: red;">Error loading book data: Invalid JSON.</p>`;
+
+        // Use setTimeout to ensure children (JSON content) are parsed by the browser
+        requestAnimationFrame(() => {
+            if (this.config) {
+                if (typeof this.config === 'object') {
+                    this.render(this.config);
+                } else {
+                    this._parseAndRender(String(this.config));
                 }
-            });
+            } else if (this.hasAttribute('config')) {
+                this._parseAndRender(this.getAttribute('config'));
+            } else if (src) {
+                this.loadData(src);
+            } else if (this.querySelector('script[type="application/json"]')) {
+                this._parseAndRender(this.querySelector('script[type="application/json"]').textContent);
+            } else {
+                this._parseAndRender(this.textContent);
+            }
+        });
+    }
+
+    _parseAndRender(jsonString) {
+        try {
+            if (!jsonString || !jsonString.trim()) return;
+            const data = JSON.parse(jsonString.trim());
+            this.render(data);
+        } catch (e) {
+            console.error('Error parsing inline JSON data', e);
+            this.innerHTML = `<p style="color: red;">Error loading book data: Invalid JSON.</p>`;
         }
     }
 

@@ -49,12 +49,37 @@ class TjInfoGap extends HTMLElement {
     connectedCallback() {
         // Use setTimeout to ensure children (JSON content) are parsed by the browser
         requestAnimationFrame(() => {
-            const rawJson = this.textContent.trim();
-            this.textContent = '';
+            let rawJson = '';
+
+            // 1. Property
+            if (this.config) {
+                if (typeof this.config === 'object') {
+                    this.activityData = this.config;
+                    this.render();
+                    return;
+                } else {
+                    rawJson = String(this.config);
+                }
+            }
+            // 2. Attribute
+            else if (this.hasAttribute('config')) {
+                rawJson = this.getAttribute('config');
+            }
+            // 3. Script tag (fallback for better HTML structure)
+            else if (this.querySelector('script[type="application/json"]')) {
+                rawJson = this.querySelector('script[type="application/json"]').textContent.trim();
+            }
+            // 4. Default: Text Content
+            else {
+                rawJson = this.textContent.trim();
+                this.textContent = ''; // clear only if we used it directly
+            }
 
             try {
-                this.activityData = JSON.parse(rawJson);
-                this.render();
+                if (rawJson) {
+                    this.activityData = JSON.parse(rawJson);
+                    this.render();
+                }
             } catch (error) {
                 this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
             }

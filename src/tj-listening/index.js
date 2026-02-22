@@ -38,22 +38,51 @@ class TjListening extends HTMLElement {
     connectedCallback() {
         // Use setTimeout to ensure children (JSON content) are parsed by the browser
         requestAnimationFrame(() => {
-            const rawJson = this.textContent.trim();
-            this.textContent = '';
+            let rawJson = '';
+
+            // 1. Property
+            if (this.config) {
+                if (typeof this.config === 'object') {
+                    this.lessonData = this.config;
+                    this._initDataAndRender();
+                    return;
+                } else {
+                    rawJson = String(this.config);
+                }
+            }
+            // 2. Attribute
+            else if (this.hasAttribute('config')) {
+                rawJson = this.getAttribute('config');
+            }
+            // 3. Script tag
+            else if (this.querySelector('script[type="application/json"]')) {
+                rawJson = this.querySelector('script[type="application/json"]').textContent.trim();
+            }
+            // 4. Default: Text Content
+            else {
+                rawJson = this.textContent.trim();
+                this.textContent = ''; // clear only if used directly
+            }
 
             try {
-                this.lessonData = JSON.parse(rawJson);
-                this.totalQuestions = this.lessonData.listening?.questions?.length || 0;
-                this.render();
-
-                // Retry voice list population for mobile
-                this._updateVoiceList();
-                setTimeout(() => this._updateVoiceList(), 500);
-                setTimeout(() => this._updateVoiceList(), 1500);
+                if (rawJson) {
+                    this.lessonData = JSON.parse(rawJson);
+                    this._initDataAndRender();
+                }
             } catch (error) {
                 this.shadowRoot.innerHTML = `<p style="color: red;">Error parsing JSON: ${error.message}</p>`;
             }
         });
+    }
+
+    _initDataAndRender() {
+        this.totalQuestions = this.lessonData.listening?.questions?.length || 0;
+        this.render();
+
+        // Retry voice list population for mobile
+        this._updateVoiceList();
+        setTimeout(() => this._updateVoiceList(), 500);
+        setTimeout(() => this._updateVoiceList(), 1500);
     }
 
     _getLang() {

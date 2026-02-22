@@ -87,12 +87,30 @@ class TjReader extends HTMLElement {
 
   loadData() {
     try {
-      if (!this.rawJson) {
-        this.rawJson = this.innerHTML.trim();
-        this.innerHTML = '';
+      let jsonText = '';
+
+      // 1. Property
+      if (this.config) {
+        if (typeof this.config === 'object') {
+            this._processParsedData(this.config);
+            return;
+        } else {
+            jsonText = String(this.config);
+        }
+      }
+      // 2. Attribute
+      else if (this.hasAttribute('config')) {
+          jsonText = this.getAttribute('config');
+      }
+      // 3. Default: Text Content (saved from connect)
+      else if (!this.rawJson) {
+          this.rawJson = this.innerHTML.trim();
+          this.innerHTML = '';
+          jsonText = this.rawJson;
+      } else {
+          jsonText = this.rawJson;
       }
 
-      const jsonText = this.rawJson;
       if (jsonText) {
         // Pre-process: escape literal newlines inside JSON strings
         const sanitized = jsonText.replace(/"((?:\\.|[^"\\])*)"/gs, (match, p1) => {
@@ -100,36 +118,40 @@ class TjReader extends HTMLElement {
         });
 
         const data = JSON.parse(sanitized);
-        this.data = (Array.isArray(data) ? data : [data]).map(item => {
-          const options = [...item.translationOptions];
-          const correctWord = item.translationOptions[item.correctTranslationIndex];
-          // Shuffle options
-          for (let i = options.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [options[i], options[j]] = [options[j], options[i]];
-          }
-
-          const words = item.original.split(/\s+/);
-          const start = item.highlightIndex;
-          const end = item.highlightIndexEnd !== undefined ? item.highlightIndexEnd : start;
-          const originalWord = words.slice(start, end + 1).join(' ').replace(/[.,!?;:]/g, '');
-
-          return {
-            ...item,
-            highlightIndexEnd: end,
-            shuffledOptions: options,
-            newCorrectIndex: options.indexOf(correctWord),
-            originalWord: originalWord,
-            translationWord: correctWord
-          };
-        });
-        this.matchingGamesCompleted = 0;
-        this.render();
+        this._processParsedData(data);
       }
     } catch (e) {
       console.error('Failed to parse JSON data for lbl-reader', e);
       this.shadowRoot.innerHTML = `<div class="error">Error loading data. Check console.</div>`;
     }
+  }
+
+  _processParsedData(data) {
+    this.data = (Array.isArray(data) ? data : [data]).map(item => {
+      const options = [...item.translationOptions];
+      const correctWord = item.translationOptions[item.correctTranslationIndex];
+      // Shuffle options
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+
+      const words = item.original.split(/\\s+/);
+      const start = item.highlightIndex;
+      const end = item.highlightIndexEnd !== undefined ? item.highlightIndexEnd : start;
+      const originalWord = words.slice(start, end + 1).join(' ').replace(/[.,!?;:]/g, '');
+
+      return {
+        ...item,
+        highlightIndexEnd: end,
+        shuffledOptions: options,
+        newCorrectIndex: options.indexOf(correctWord),
+        originalWord: originalWord,
+        translationWord: correctWord
+      };
+    });
+    this.matchingGamesCompleted = 0;
+    this.render();
   }
 
   displayAllLines() {

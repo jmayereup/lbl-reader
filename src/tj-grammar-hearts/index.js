@@ -59,14 +59,31 @@ class TjGrammarHearts extends HTMLElement {
 
   loadData() {
     try {
-      // Look for JSON in a script tag first (best practice)
-      const scriptTag = this.querySelector('script[type="application/json"]');
-      let jsonText = scriptTag ? scriptTag.textContent : this.textContent.trim();
+      let jsonText = '';
 
-      if (!jsonText) {
-        // If empty, maybe it's not ready yet or really empty
-        return;
+      // 1. Property
+      if (this.config) {
+        if (typeof this.config === 'object') {
+            this._processParsedData(this.config);
+            return;
+        } else {
+            jsonText = String(this.config);
+        }
       }
+      // 2. Attribute
+      else if (this.hasAttribute('config')) {
+          jsonText = this.getAttribute('config');
+      }
+      // 3. Script tag
+      else if (this.querySelector('script[type="application/json"]')) {
+          jsonText = this.querySelector('script[type="application/json"]').textContent.trim();
+      }
+      // 4. Default: Text Content
+      else {
+          jsonText = this.textContent.trim();
+      }
+      
+      if (!jsonText) return;
 
       // Pre-process: escape literal newlines inside JSON strings
       // This happens when CMS/Blog platforms wrap long JSON text
@@ -75,7 +92,15 @@ class TjGrammarHearts extends HTMLElement {
       });
 
       let data = JSON.parse(sanitized);
+      this._processParsedData(data);
+      this.innerHTML = ''; // Only clear after successful parse
+    } catch (e) {
+      console.error('Failed to parse JSON for grammar-hearts', e);
+      this.shadowRoot.innerHTML = `<div class="error-msg">Error loading grammar data. Please ensure your JSON is correctly formatted.</div>`;
+    }
+  }
 
+  _processParsedData(data) {
       // If data is an array, take the first element (common format for other extensions)
       if (Array.isArray(data)) {
         data = data[0];
@@ -94,11 +119,6 @@ class TjGrammarHearts extends HTMLElement {
       }
 
       this.prepRound();
-      this.innerHTML = ''; // Only clear after successful parse
-    } catch (e) {
-      console.error('Failed to parse JSON for grammar-hearts', e);
-      this.shadowRoot.innerHTML = `<div class="error-msg">Error loading grammar data. Please ensure your JSON is correctly formatted.</div>`;
-    }
   }
 
   // Simple Markdown-to-HTML helper (or use a library)

@@ -54,8 +54,30 @@ class TjQuizElement extends HTMLElement {
     connectedCallback() {
         // Use setTimeout to ensure children (text content) are parsed by the browser
         requestAnimationFrame(() => {
-            // Store the original content before rendering shadow DOM
-            this.originalContent = this.textContent;
+            // 1. Property
+            if (this.config) {
+                if (typeof this.config === 'object') {
+                    // Usually string, but just in case
+                    this.originalContent = JSON.stringify(this.config);
+                } else {
+                    this.originalContent = String(this.config);
+                }
+            } 
+            // 2. Attribute
+            else if (this.hasAttribute('config')) {
+                this.originalContent = this.getAttribute('config');
+            } 
+            // 3. Script tag
+            else if (this.querySelector('script[type="text/markdown"]')) {
+                this.originalContent = this.querySelector('script[type="text/markdown"]').textContent;
+            }
+            else if (this.querySelector('script[type="application/json"]')) {
+                this.originalContent = this.querySelector('script[type="application/json"]').textContent;
+            }
+            // 4. Default: Text Content
+            else {
+                this.originalContent = this.textContent;
+            }
 
             // Get submission URL from attribute if provided (overrides config file)
             if (this.hasAttribute('submission-url')) {

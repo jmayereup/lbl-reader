@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Test 2</title>
+</head>
+<body>
+    <h1>Testing Config Property and Attribute (Reader & Listening)</h1>
+    <script type="module" src="/src/tj-listening/index.js"></script>
+    <script type="module" src="/src/tj-reader/index.js"></script>
+
+    <div style="flex: 1; border: 1px solid #ccc; padding: 1rem; margin-bottom: 2rem;">
+        <h2>tj-listening - Attribute</h2>
+        <tj-listening id="listen-attr" config='{"title": "Listening Attribute", "listening": {"questions": [{"question": "Test", "options": ["A", "B"], "correct": "A"}]}}'></tj-listening>
+    </div>
+
+    <div style="flex: 1; border: 1px solid #ccc; padding: 1rem; margin-bottom: 2rem;">
+        <h2>tj-reader - Property</h2>
+        <tj-reader id="reader-prop"></tj-reader>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const reader = document.getElementById('reader-prop');
+            setTimeout(() => {
+                // tj-reader expects an array of these objects
+                reader.config = [{
+                    "original": "This is a test sentence.",
+                    "translationOptions": ["test", "quiz", "exam"],
+                    "fullTranslation": "C'est une phrase de test.",
+                    "correctTranslationIndex": 0,
+                    "highlightIndex": 3
+                }];
+                
+                // Reconnect hack
+                const parent = reader.parentNode;
+                const nextSibling = reader.nextSibling;
+                parent.removeChild(reader);
+                if (nextSibling) {
+                    parent.insertBefore(reader, nextSibling);
+                } else {
+                    parent.appendChild(reader);
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

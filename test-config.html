@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Test</title>
+</head>
+<body>
+    <h1>Testing Config Property and Attribute</h1>
+
+    <div style="display: flex; gap: 2rem;">
+        <div style="flex: 1; border: 1px solid #ccc; padding: 1rem;">
+            <h2>1. Passed via Config Attribute</h2>
+            <!-- Note: Double quotes are needed for valid JSON, so attribute uses single quotes -->
+            <tj-info-gap id="test-attr" config='{"title": "Info Gap Attribute Test", "image": "https://placehold.co/400x300", "gaps": [{"text": "Hello, world", "type": "text"}]}'></tj-info-gap>
+        </div>
+
+        <div style="flex: 1; border: 1px solid #ccc; padding: 1rem;">
+            <h2>2. Passed via JavaScript Property</h2>
+            <tj-info-gap id="test-prop"></tj-info-gap>
+        </div>
+
+        <div style="flex: 1; border: 1px solid #ccc; padding: 1rem;">
+            <h2>3. Old Method (Inner HTML)</h2>
+            <tj-info-gap id="test-inner">
+                {
+                    "title": "Info Gap Inner Text Test",
+                    "image": "https://placehold.co/400x300",
+                    "gaps": [{"text": "Hello, world", "type": "text"}]
+                }
+            </tj-info-gap>
+        </div>
+    </div>
+
+    <!-- Load the bundled component -->
+    <script type="module" src="/src/tj-info-gap/index.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const propComponent = document.getElementById('test-prop');
+            // Wait a tick to ensure component is registered
+            setTimeout(() => {
+                propComponent.config = {
+                    title: "Info Gap Property Test",
+                    image: "https://placehold.co/400x300",
+                    gaps: [{ text: "Hello, world", type: "text" }]
+                };
+                
+                // For properties set AFTER connection, we need to trigger re-render manually
+                // Since our changes only apply during connectedCallback, we force a reconnect:
+                const parent = propComponent.parentNode;
+                const nextSibling = propComponent.nextSibling;
+                parent.removeChild(propComponent);
+                if (nextSibling) {
+                    parent.insertBefore(propComponent, nextSibling);
+                } else {
+                    parent.appendChild(propComponent);
+                }
+
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -88,8 +88,29 @@ class TjSpeedReview extends HTMLElement {
 
   loadData() {
     try {
-      const scriptTag = this.querySelector('script[type="application/json"]');
-      let jsonText = scriptTag ? scriptTag.textContent : this.textContent.trim();
+      let jsonText = '';
+
+      // 1. Property
+      if (this.config) {
+        if (typeof this.config === 'object') {
+            this._processParsedData(this.config);
+            return;
+        } else {
+            jsonText = String(this.config);
+        }
+      }
+      // 2. Attribute
+      else if (this.hasAttribute('config')) {
+          jsonText = this.getAttribute('config');
+      }
+      // 3. Script tag
+      else if (this.querySelector('script[type="application/json"]')) {
+          jsonText = this.querySelector('script[type="application/json"]').textContent.trim();
+      }
+      // 4. Default: Text Content
+      else {
+          jsonText = this.textContent.trim();
+      }
 
       if (!jsonText) return;
 
@@ -99,16 +120,18 @@ class TjSpeedReview extends HTMLElement {
       });
 
       let data = JSON.parse(sanitized);
-      if (Array.isArray(data)) data = data[0];
-
-      if (data.title) this.title = data.title;
-      if (data.questions) this.questions = data.questions;
-
-      this.innerHTML = '';
+      this._processParsedData(data);
+      this.innerHTML = ''; // Only clear after successful parse
     } catch (e) {
       console.error('Failed to parse JSON for tj-speed-review', e);
       this.shadowRoot.innerHTML = `<div class="error-msg">Error loading quiz data. Check console.</div>`;
     }
+  }
+
+  _processParsedData(data) {
+      if (Array.isArray(data)) data = data[0];
+      if (data.title) this.title = data.title;
+      if (data.questions) this.questions = data.questions;
   }
 
   parseMD(text) {

@@ -28,19 +28,44 @@ class TjPronunciation extends HTMLElement {
 
   connectedCallback() {
     const src = this.getAttribute("src");
-    if (src) {
-      this.loadData(src);
-    } else {
-      requestAnimationFrame(() => {
-        try {
-          const data = JSON.parse(this.textContent.trim());
-          this.render(data);
-        } catch (e) {
-          console.error("Error parsing inline JSON data", e);
-          this.shadowRoot.innerHTML = `<p style="color: red;">Error loading pronunciation data: Invalid JSON.</p>`;
+
+    requestAnimationFrame(() => {
+        let jsonText = '';
+
+        // 1. Property
+        if (this.config) {
+            if (typeof this.config === 'object') {
+                this.render(this.config);
+                return;
+            } else {
+                jsonText = String(this.config);
+            }
         }
-      });
-    }
+        // 2. Attribute
+        else if (this.hasAttribute('config')) {
+            jsonText = this.getAttribute('config');
+        }
+        // 3. Script tag
+        else if (this.querySelector('script[type="application/json"]')) {
+            jsonText = this.querySelector('script[type="application/json"]').textContent.trim();
+        }
+        // 4. Default: Text Content
+        else if (!src) {
+            jsonText = this.textContent.trim();
+        }
+
+        if (jsonText) {
+            try {
+                const data = JSON.parse(jsonText);
+                this.render(data);
+            } catch (e) {
+                console.error("Error parsing inline JSON data", e);
+                this.shadowRoot.innerHTML = `<p style="color: red;">Error loading pronunciation data: Invalid JSON.</p>`;
+            }
+        } else if (src) {
+            this.loadData(src);
+        }
+    });
   }
 
   async loadData(url) {
